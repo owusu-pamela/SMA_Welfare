@@ -15,6 +15,7 @@ let withdrawals = {};
 // Initialize dashboard
 async function initializeDashboard() {
     try {
+        console.log('Initializing dashboard...');
         // Load all data
         await loadAllData();
         
@@ -25,42 +26,54 @@ async function initializeDashboard() {
         document.getElementById('lastUpdate').textContent = 
             `Last updated: ${new Date().toLocaleString()}`;
             
+        console.log('Dashboard initialized successfully');
     } catch (error) {
         console.error('Error initializing dashboard:', error);
-        alert('Error loading dashboard data. Please refresh the page.');
+        showToast('Error loading dashboard data', 'error');
     }
 }
 
 // Load all data from Firebase
 async function loadAllData() {
     try {
+        console.log('Loading all data...');
         members = await WelfareDB.getMembers();
         contributions = await WelfareDB.getContributions();
         withdrawals = await WelfareDB.getWithdrawals();
+        
+        console.log('Data loaded - Members:', Object.keys(members).length, 
+                   'Contributions:', Object.keys(contributions).length,
+                   'Withdrawals:', Object.keys(withdrawals).length);
         
         updateDashboardStats();
         updateReminders();
         updateRecentActivities();
     } catch (error) {
         console.error('Error loading data:', error);
+        throw error;
     }
 }
 
 // Set up real-time listeners
 function setupRealtimeListeners() {
+    console.log('Setting up real-time listeners...');
+    
     WelfareDB.onMembersChange((newMembers) => {
+        console.log('Members updated in real-time');
         members = newMembers;
         updateDashboardStats();
         updateReminders();
     });
 
     WelfareDB.onContributionsChange((newContributions) => {
+        console.log('Contributions updated in real-time');
         contributions = newContributions;
         updateDashboardStats();
         updateRecentActivities();
     });
 
     WelfareDB.onWithdrawalsChange((newWithdrawals) => {
+        console.log('Withdrawals updated in real-time');
         withdrawals = newWithdrawals;
         updateDashboardStats();
         updateRecentActivities();
@@ -69,6 +82,8 @@ function setupRealtimeListeners() {
 
 // Update dashboard statistics
 function updateDashboardStats() {
+    console.log('Updating dashboard stats...');
+    
     // Total Members
     const totalMembers = Object.keys(members).length;
     document.getElementById('totalMembers').textContent = totalMembers;
@@ -100,6 +115,8 @@ function updateDashboardStats() {
         return sum;
     }, 0);
     document.getElementById('monthlyCollection').textContent = `GH₵ ${monthlyCollection.toFixed(2)}`;
+
+    console.log('Dashboard stats updated');
 }
 
 // Update payment reminders
@@ -124,14 +141,15 @@ function updateReminders() {
     });
     
     if (unpaidMembers.length === 0) {
-        remindersList.innerHTML = '<div class="reminder-item">All members have paid for this month! 🎉</div>';
+        remindersList.innerHTML = '<div class="reminder-item">🎉 All members have paid for this month!</div>';
     } else {
         remindersList.innerHTML = unpaidMembers.map(member => `
             <div class="reminder-item">
-                <strong>${member.name}</strong> has not paid for ${getMonthName(currentMonth)} ${currentYear}
-                <button class="btn-primary" style="margin-left: 10px; padding: 2px 8px; font-size: 0.8rem;" 
+                <strong>${member.name}</strong> - ${getMonthName(currentMonth)} ${currentYear}
+                <br>
+                <button class="btn-primary" style="margin-top: 5px; padding: 5px 10px; font-size: 0.8rem;" 
                         onclick="quickRecordPayment('${member.id}')">
-                    Record Payment
+                    💳 Record Payment
                 </button>
             </div>
         `).join('');
@@ -156,7 +174,7 @@ function updateRecentActivities() {
                 return `
                     <div class="activity-item">
                         <span class="activity-text">
-                            <strong>${activity.memberName}</strong> paid GH₵ ${parseFloat(activity.amount).toFixed(2)}
+                            💰 <strong>${activity.memberName}</strong> paid GH₵ ${parseFloat(activity.amount).toFixed(2)}
                         </span>
                         <small>${new Date(activity.timestamp).toLocaleDateString()}</small>
                     </div>
@@ -165,7 +183,7 @@ function updateRecentActivities() {
                 return `
                     <div class="activity-item">
                         <span class="activity-text">
-                            Withdrawal of GH₵ ${parseFloat(activity.amount).toFixed(2)} for ${activity.reason}
+                            🏧 Withdrawal of GH₵ ${parseFloat(activity.amount).toFixed(2)} for ${activity.reason}
                         </span>
                         <small>${new Date(activity.timestamp).toLocaleDateString()}</small>
                     </div>
@@ -176,29 +194,29 @@ function updateRecentActivities() {
 }
 
 // Quick record payment function
-function quickRecordPayment(memberId) {
+async function quickRecordPayment(memberId) {
     const member = Object.values(members).find(m => m.id === memberId);
     if (member) {
-        if (confirm(`Record payment for ${member.name}?`)) {
+        const amount = prompt(`Record payment for ${member.name}:`, member.monthlyContribution || '0');
+        if (amount && !isNaN(parseFloat(amount)) && parseFloat(amount) > 0) {
             const currentDate = new Date();
             const contributionData = {
                 memberId: memberId,
                 memberName: member.name,
-                amount: member.monthlyContribution || 0,
+                amount: parseFloat(amount),
                 month: currentDate.getMonth() + 1,
                 year: currentDate.getFullYear(),
-                timestamp: currentDate.toISOString(),
-                recordedBy: sessionStorage.getItem('welfare_username') || 'Admin'
+                paymentMethod: 'Cash',
+                notes: 'Quick payment from dashboard'
             };
             
-            WelfareDB.addContribution(contributionData)
-                .then(() => {
-                    alert(`Payment recorded successfully for ${member.name}`);
-                })
-                .catch(error => {
-                    console.error('Error recording payment:', error);
-                    alert('Error recording payment. Please try again.');
-                });
+            try {
+                await WelfareDB.addContribution(contributionData);
+                showToast(`Payment recorded for ${member.name}`, 'success');
+            } catch (error) {
+                console.error('Error recording payment:', error);
+                showToast('Error recording payment', 'error');
+            }
         }
     }
 }
@@ -218,14 +236,6 @@ document.getElementById('logoutBtn').addEventListener('click', function() {
         sessionStorage.removeItem('welfare_lastLogin');
         window.location.href = 'index.html';
     }
-});
-
-// Navigation active state
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function() {
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        this.classList.add('active');
-    });
 });
 
 // Initialize dashboard when page loads
