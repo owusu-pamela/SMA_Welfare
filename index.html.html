@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h2>SUNYANI MUNICIPAL WELFARE</h2>
+            <h3>Login</h3>
+            <form id="loginForm">
+                <input type="email" id="email" placeholder="Email" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="hidden">
+        <header>
+            <h1>SUNYANI MUNICIPAL WELFARE</h1>
+            <button id="logoutBtn">Logout</button>
+        </header>
+
+        <nav>
+            <button class="nav-btn active" data-tab="dashboard">Dashboard</button>
+            <button class="nav-btn" data-tab="members">Members</button>
+            <button class="nav-btn" data-tab="contributions">Contributions</button>
+            <button class="nav-btn" data-tab="withdrawals">Withdrawals</button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <h2>Dashboard Overview</h2>
+            <div class="stats">
+                <div class="stat-card">
+                    <h3>Total Members</h3>
+                    <p id="totalMembers">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Total Contributions</h3>
+                    <p id="totalContributions">GH₵ 0.00</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Available Balance</h3>
+                    <p id="availableBalance">GH₵ 0.00</p>
+                </div>
+            </div>
+            <div class="reminders">
+                <h3>Payment Reminders</h3>
+                <div id="reminderList"></div>
+            </div>
+        </div>
+
+        <!-- Members Tab -->
+        <div id="members" class="tab-content">
+            <h2>Member Management</h2>
+            <button id="addMemberBtn">Add New Member</button>
+            <table id="membersTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Monthly Contribution</th>
+                        <th>Join Date</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="membersList"></tbody>
+            </table>
+        </div>
+
+        <!-- Contributions Tab -->
+        <div id="contributions" class="tab-content">
+            <h2>Contribution Records</h2>
+            <div class="filters">
+                <select id="monthFilter">
+                    <option value="">All Months</option>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <!-- Add all months -->
+                </select>
+                <select id="yearFilter">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                </select>
+            </div>
+            <table id="contributionsTable">
+                <thead>
+                    <tr>
+                        <th>Member</th>
+                        <th>Month</th>
+                        <th>Amount</th>
+                        <th>Payment Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="contributionsList"></tbody>
+            </table>
+        </div>
+
+        <!-- Withdrawals Tab -->
+        <div id="withdrawals" class="tab-content">
+            <h2>Withdrawal Records</h2>
+            <button id="addWithdrawalBtn">New Withdrawal</button>
+            <table id="withdrawalsTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Reason</th>
+                        <th>Processed By</th>
+                    </tr>
+                </thead>
+                <tbody id="withdrawalsList"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Member Modal -->
+    <div id="memberModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Add New Member</h3>
+            <form id="memberForm">
+                <input type="text" id="memberName" placeholder="Full Name" required>
+                <input type="number" id="monthlyContribution" placeholder="Monthly Contribution" required>
+                <button type="submit">Add Member</button>
+                <button type="button" id="cancelMemberBtn">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Withdrawal Modal -->
+    <div id="withdrawalModal" class="modal hidden">
+        <div class="modal-content">
+            <h3>New Withdrawal</h3>
+            <form id="withdrawalForm">
+                <input type="number" id="withdrawalAmount" placeholder="Amount" required>
+                <textarea id="withdrawalReason" placeholder="Reason for withdrawal" required></textarea>
+                <button type="submit">Process Withdrawal</button>
+                <button type="button" id="cancelWithdrawalBtn">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
