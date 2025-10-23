@@ -6,7 +6,6 @@
     <title>SUNYANI MUNICIPAL WELFARE - Login</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -80,6 +79,11 @@
             background: #2980b9;
         }
 
+        .login-btn:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+        }
+
         .default-credentials {
             background: #f8f9fa;
             padding: 1rem;
@@ -92,6 +96,9 @@
         .error-message {
             color: #e74c3c;
             margin-top: 1rem;
+            padding: 10px;
+            background: #ffeaea;
+            border-radius: 5px;
             display: none;
         }
 
@@ -99,6 +106,15 @@
             display: none;
             color: #3498db;
             margin-top: 1rem;
+        }
+
+        .success-message {
+            color: #27ae60;
+            margin-top: 1rem;
+            padding: 10px;
+            background: #eaffea;
+            border-radius: 5px;
+            display: none;
         }
     </style>
 </head>
@@ -110,13 +126,14 @@
         </div>
         
         <form class="login-form" id="loginForm">
-            <input type="text" id="username" placeholder="Username" required>
-            <input type="password" id="password" placeholder="Password" required>
-            <button type="submit" class="login-btn">Login</button>
+            <input type="text" id="username" placeholder="Username" required value="abc">
+            <input type="password" id="password" placeholder="Password" required value="12345">
+            <button type="submit" class="login-btn" id="loginBtn">Login</button>
         </form>
 
         <div class="loading" id="loading">Initializing system...</div>
-        <div class="error-message" id="errorMessage">Invalid username or password!</div>
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
 
         <div class="default-credentials">
             <strong>Default Login:</strong><br>
@@ -141,7 +158,6 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
-        const auth = firebase.auth();
 
         // Show loading initially
         document.getElementById('loading').style.display = 'block';
@@ -149,24 +165,32 @@
         // Initialize default admin user
         async function initializeAdminUser() {
             try {
+                console.log('Initializing admin user...');
+                
                 // Check if admin user exists
                 const adminRef = database.ref('admin');
                 const snapshot = await adminRef.once('value');
                 
                 if (!snapshot.exists()) {
+                    console.log('Creating default admin user...');
                     // Create default admin user
                     await adminRef.set({
                         username: 'abc',
-                        password: '12345', // In production, this should be hashed
+                        password: '12345',
                         email: 'admin@sunyaniwelfare.com',
                         createdAt: new Date().toISOString()
                     });
-                    console.log('Default admin user created');
+                    console.log('Default admin user created successfully');
+                    showSuccess('System initialized successfully!');
+                } else {
+                    console.log('Admin user already exists');
+                    showSuccess('System ready!');
                 }
                 
                 document.getElementById('loading').style.display = 'none';
             } catch (error) {
                 console.error('Error initializing admin:', error);
+                showError('Failed to initialize system: ' + error.message);
                 document.getElementById('loading').style.display = 'none';
             }
         }
@@ -179,46 +203,76 @@
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
             const loading = document.getElementById('loading');
+            const loginBtn = document.getElementById('loginBtn');
 
+            loginBtn.disabled = true;
             loading.style.display = 'block';
             errorMessage.style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
 
             try {
+                console.log('Attempting login...');
+                
                 // Check credentials against Firebase
                 const adminRef = database.ref('admin');
                 const snapshot = await adminRef.once('value');
                 const adminData = snapshot.val();
 
+                console.log('Admin data:', adminData);
+
                 if (adminData && adminData.username === username && adminData.password === password) {
+                    console.log('Login successful');
                     // Successful login - store session and redirect
                     sessionStorage.setItem('welfare_loggedIn', 'true');
                     sessionStorage.setItem('welfare_username', username);
                     sessionStorage.setItem('welfare_lastLogin', new Date().toISOString());
                     
-                    window.location.href = 'dashboard.html';
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1000);
                 } else {
-                    errorMessage.style.display = 'block';
+                    console.log('Invalid credentials');
+                    showError('Invalid username or password!');
                     loading.style.display = 'none';
+                    loginBtn.disabled = false;
                 }
             } catch (error) {
                 console.error('Login error:', error);
-                errorMessage.textContent = 'Login failed. Please try again.';
-                errorMessage.style.display = 'block';
+                showError('Login failed: ' + error.message);
                 loading.style.display = 'none';
+                loginBtn.disabled = false;
             }
         });
 
-        // Clear error message when user starts typing
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        // Clear messages when user starts typing
         document.getElementById('username').addEventListener('input', function() {
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
         });
 
         document.getElementById('password').addEventListener('input', function() {
             document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
         });
 
         // Initialize admin user when page loads
-        initializeAdminUser();
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing admin...');
+            initializeAdminUser();
+        });
     </script>
 </body>
 </html>
