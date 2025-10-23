@@ -1,4 +1,4 @@
-// Firebase Configuration - Complete Version
+// Firebase Configuration - Complete Version with Member Features
 const firebaseConfig = {
     apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
     authDomain: "sunyani-municipal-welfare.firebaseapp.com",
@@ -27,6 +27,18 @@ function checkAuth() {
         return false;
     }
     return true;
+}
+
+// Check if user is admin
+function checkAdmin() {
+    const role = sessionStorage.getItem('welfare_role');
+    return role === 'admin';
+}
+
+// Check if user is member
+function checkMember() {
+    const role = sessionStorage.getItem('welfare_role');
+    return role === 'member';
 }
 
 // Utility functions for Firebase operations
@@ -237,6 +249,171 @@ const WelfareDB = {
         }
     },
 
+    // Member-specific operations
+    async getMemberContributions(memberId) {
+        try {
+            const contributions = await this.getContributions();
+            const memberContributions = {};
+            
+            Object.keys(contributions).forEach(key => {
+                if (contributions[key].memberId === memberId) {
+                    memberContributions[key] = contributions[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberContributions).length} contributions for member ${memberId}`);
+            return memberContributions;
+        } catch (error) {
+            console.error('Error getting member contributions:', error);
+            return {};
+        }
+    },
+
+    async getMemberWithdrawals(memberId) {
+        try {
+            const withdrawals = await this.getWithdrawals();
+            const memberWithdrawals = {};
+            
+            Object.keys(withdrawals).forEach(key => {
+                if (withdrawals[key].memberId === memberId) {
+                    memberWithdrawals[key] = withdrawals[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberWithdrawals).length} withdrawals for member ${memberId}`);
+            return memberWithdrawals;
+        } catch (error) {
+            console.error('Error getting member withdrawals:', error);
+            return {};
+        }
+    },
+
+    async getMemberWelfareApplications(memberId) {
+        try {
+            const snapshot = await database.ref('welfareApplications').once('value');
+            const applications = snapshot.val() || {};
+            const memberApplications = {};
+            
+            Object.keys(applications).forEach(key => {
+                if (applications[key].memberId === memberId) {
+                    memberApplications[key] = applications[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberApplications).length} welfare applications for member ${memberId}`);
+            return memberApplications;
+        } catch (error) {
+            console.error('Error getting member welfare applications:', error);
+            return {};
+        }
+    },
+
+    async submitWelfareApplication(applicationData) {
+        try {
+            const applicationId = 'welfare_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('welfareApplications/' + applicationId).set({
+                ...applicationData,
+                id: applicationId,
+                submittedAt: new Date().toISOString(),
+                status: 'pending'
+            });
+            console.log('Welfare application submitted successfully:', applicationId);
+            return applicationId;
+        } catch (error) {
+            console.error('Error submitting welfare application:', error);
+            throw error;
+        }
+    },
+
+    async submitWithdrawalRequest(requestData) {
+        try {
+            const requestId = 'withdrawal_req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('withdrawalRequests/' + requestId).set({
+                ...requestData,
+                id: requestId,
+                submittedAt: new Date().toISOString(),
+                status: 'pending'
+            });
+            console.log('Withdrawal request submitted successfully:', requestId);
+            return requestId;
+        } catch (error) {
+            console.error('Error submitting withdrawal request:', error);
+            throw error;
+        }
+    },
+
+    async getWithdrawalRequests() {
+        try {
+            const snapshot = await database.ref('withdrawalRequests').once('value');
+            const requests = snapshot.val();
+            
+            if (!requests) {
+                console.log('No withdrawal requests found in database');
+                return {};
+            }
+            
+            const requestsWithIds = {};
+            Object.keys(requests).forEach(key => {
+                requestsWithIds[key] = {
+                    ...requests[key],
+                    id: key
+                };
+            });
+            
+            console.log('Processed withdrawal requests with IDs:', requestsWithIds);
+            return requestsWithIds;
+        } catch (error) {
+            console.error('Error fetching withdrawal requests:', error);
+            return {};
+        }
+    },
+
+    async updateWithdrawalRequest(requestId, updates) {
+        try {
+            await database.ref('withdrawalRequests/' + requestId).update(updates);
+            console.log('Withdrawal request updated successfully:', requestId);
+        } catch (error) {
+            console.error('Error updating withdrawal request:', error);
+            throw error;
+        }
+    },
+
+    async getWelfareApplications() {
+        try {
+            const snapshot = await database.ref('welfareApplications').once('value');
+            const applications = snapshot.val();
+            
+            if (!applications) {
+                console.log('No welfare applications found in database');
+                return {};
+            }
+            
+            const applicationsWithIds = {};
+            Object.keys(applications).forEach(key => {
+                applicationsWithIds[key] = {
+                    ...applications[key],
+                    id: key
+                };
+            });
+            
+            console.log('Processed welfare applications with IDs:', applicationsWithIds);
+            return applicationsWithIds;
+        } catch (error) {
+            console.error('Error fetching welfare applications:', error);
+            return {};
+        }
+    },
+
+    async updateWelfareApplication(applicationId, updates) {
+        try {
+            await database.ref('welfareApplications/' + applicationId).update(updates);
+            console.log('Welfare application updated successfully:', applicationId);
+        } catch (error) {
+            console.error('Error updating welfare application:', error);
+            throw error;
+        }
+    },
+
     // Real-time listeners
     onMembersChange(callback) {
         database.ref('members').on('value', (snapshot) => {
@@ -264,6 +441,20 @@ const WelfareDB = {
             callback(snapshot.val() || {});
         });
         return () => database.ref('settings').off('value');
+    },
+
+    onWithdrawalRequestsChange(callback) {
+        database.ref('withdrawalRequests').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('withdrawalRequests').off('value');
+    },
+
+    onWelfareApplicationsChange(callback) {
+        database.ref('welfareApplications').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('welfareApplications').off('value');
     },
 
     // Utility methods
@@ -302,6 +493,22 @@ const WelfareDB = {
         }
     },
 
+    async getMemberBalance(memberId) {
+        try {
+            const memberContributions = await this.getMemberContributions(memberId);
+            const totalPaid = Object.values(memberContributions).reduce((sum, contribution) => {
+                return sum + (parseFloat(contribution.amount) || 0);
+            }, 0);
+            
+            // Calculate available withdrawal balance (typically a percentage of total paid)
+            const withdrawalPercentage = 0.5; // 50% of total contributions can be withdrawn
+            return totalPaid * withdrawalPercentage;
+        } catch (error) {
+            console.error('Error calculating member balance:', error);
+            return 0;
+        }
+    },
+
     // Data export methods
     async exportData() {
         try {
@@ -309,17 +516,71 @@ const WelfareDB = {
             const contributions = await this.getContributions();
             const withdrawals = await this.getWithdrawals();
             const settings = await this.getSettings();
+            const withdrawalRequests = await this.getWithdrawalRequests();
+            const welfareApplications = await this.getWelfareApplications();
             
             return {
                 members,
                 contributions,
                 withdrawals,
+                withdrawalRequests,
+                welfareApplications,
                 settings,
                 exportDate: new Date().toISOString(),
                 version: '1.0'
             };
         } catch (error) {
             console.error('Error exporting data:', error);
+            throw error;
+        }
+    },
+
+    // Notification methods
+    async addNotification(notificationData) {
+        try {
+            const notificationId = 'notification_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('notifications/' + notificationId).set({
+                ...notificationData,
+                id: notificationId,
+                createdAt: new Date().toISOString(),
+                read: false
+            });
+            console.log('Notification added successfully:', notificationId);
+            return notificationId;
+        } catch (error) {
+            console.error('Error adding notification:', error);
+            throw error;
+        }
+    },
+
+    async getMemberNotifications(memberId) {
+        try {
+            const snapshot = await database.ref('notifications').once('value');
+            const notifications = snapshot.val() || {};
+            const memberNotifications = {};
+            
+            Object.keys(notifications).forEach(key => {
+                if (notifications[key].memberId === memberId || !notifications[key].memberId) {
+                    memberNotifications[key] = notifications[key];
+                }
+            });
+            
+            return memberNotifications;
+        } catch (error) {
+            console.error('Error getting member notifications:', error);
+            return {};
+        }
+    },
+
+    async markNotificationAsRead(notificationId) {
+        try {
+            await database.ref('notifications/' + notificationId).update({
+                read: true,
+                readAt: new Date().toISOString()
+            });
+            console.log('Notification marked as read:', notificationId);
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
             throw error;
         }
     }
@@ -363,6 +624,12 @@ function formatDateTime(dateString) {
     return date.toLocaleString();
 }
 
+function getMonthName(monthNumber) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[monthNumber - 1] || 'Unknown';
+}
+
 // Validation utilities
 function isValidEmail(email) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -382,6 +649,8 @@ function isValidAmount(amount) {
 function getCurrentUser() {
     return {
         username: sessionStorage.getItem('welfare_username'),
+        userId: sessionStorage.getItem('welfare_userId'),
+        role: sessionStorage.getItem('welfare_role'),
         lastLogin: sessionStorage.getItem('welfare_lastLogin')
     };
 }
@@ -389,6 +658,8 @@ function getCurrentUser() {
 function clearUserSession() {
     sessionStorage.removeItem('welfare_loggedIn');
     sessionStorage.removeItem('welfare_username');
+    sessionStorage.removeItem('welfare_userId');
+    sessionStorage.removeItem('welfare_role');
     sessionStorage.removeItem('welfare_lastLogin');
 }
 
@@ -400,10 +671,14 @@ async function debugDatabase() {
         const members = await WelfareDB.getMembers();
         const contributions = await WelfareDB.getContributions();
         const withdrawals = await WelfareDB.getWithdrawals();
+        const withdrawalRequests = await WelfareDB.getWithdrawalRequests();
+        const welfareApplications = await WelfareDB.getWelfareApplications();
         
         console.log('Members count:', Object.keys(members).length);
         console.log('Contributions count:', Object.keys(contributions).length);
         console.log('Withdrawals count:', Object.keys(withdrawals).length);
+        console.log('Withdrawal Requests count:', Object.keys(withdrawalRequests).length);
+        console.log('Welfare Applications count:', Object.keys(welfareApplications).length);
         
         const totalContributions = await WelfareDB.getTotalContributions();
         const totalWithdrawals = await WelfareDB.getTotalWithdrawals();
@@ -445,6 +720,9 @@ async function initializeDefaultData() {
                 currency: 'GHS',
                 defaultMonthlyContribution: 50.00,
                 fiscalYearStart: 'January',
+                withdrawalPercentage: 0.5,
+                minWithdrawalAmount: 100.00,
+                maxWithdrawalAmount: 5000.00,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             });
