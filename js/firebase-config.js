@@ -28,7 +28,16 @@ function checkAuth() {
     }
     return true;
 }
-
+// Add to existing WelfareDB object in firebase-config.js
+async updateContribution(contributionId, updates) {
+    try {
+        await database.ref('contributions/' + contributionId).update(updates);
+        console.log('Contribution updated successfully:', contributionId);
+    } catch (error) {
+        console.error('Error updating contribution:', error);
+        throw error;
+    }
+},
 // Utility functions for Firebase operations
 const WelfareDB = {
     // Members operations
