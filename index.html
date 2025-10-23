@@ -28,7 +28,7 @@
             border-radius: 15px;
             box-shadow: 0 15px 35px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             text-align: center;
         }
 
@@ -47,17 +47,63 @@
             font-size: 0.9rem;
         }
 
-        .login-form input {
+        .login-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #7f8c8d;
+            transition: all 0.3s;
+        }
+
+        .tab-btn.active {
+            color: #3498db;
+            border-bottom: 3px solid #3498db;
+            font-weight: bold;
+        }
+
+        .login-form {
+            display: block;
+        }
+
+        .register-form {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .login-form input,
+        .register-form input,
+        .register-form select {
             width: 100%;
             padding: 12px;
-            margin: 10px 0;
             border: 2px solid #ecf0f1;
             border-radius: 8px;
             font-size: 1rem;
             transition: border-color 0.3s;
         }
 
-        .login-form input:focus {
+        .login-form input:focus,
+        .register-form input:focus,
+        .register-form select:focus {
             outline: none;
             border-color: #3498db;
         }
@@ -116,6 +162,21 @@
             border-radius: 5px;
             display: none;
         }
+
+        .switch-text {
+            margin-top: 1rem;
+            color: #666;
+        }
+
+        .switch-text a {
+            color: #3498db;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .switch-text a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -125,18 +186,71 @@
             <p>Member Contribution Management System</p>
         </div>
         
+        <div class="login-tabs">
+            <button class="tab-btn active" id="loginTab">Member Login</button>
+            <button class="tab-btn" id="registerTab">Register</button>
+        </div>
+        
+        <!-- Member Login Form -->
         <form class="login-form" id="loginForm">
-            <input type="text" id="username" placeholder="Username" required value="abc">
-            <input type="password" id="password" placeholder="Password" required value="12345">
-            <button type="submit" class="login-btn" id="loginBtn">Login</button>
+            <div class="form-group">
+                <label for="username">Email or Member ID</label>
+                <input type="text" id="username" placeholder="Enter your email or member ID" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" placeholder="Enter your password" required>
+            </div>
+            <button type="submit" class="login-btn" id="loginBtn">Login as Member</button>
+        </form>
+
+        <!-- Member Registration Form -->
+        <form class="register-form" id="registerForm">
+            <div class="form-group">
+                <label for="regFullName">Full Name *</label>
+                <input type="text" id="regFullName" placeholder="Enter your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="regEmail">Email Address *</label>
+                <input type="email" id="regEmail" placeholder="Enter your email" required>
+            </div>
+            <div class="form-group">
+                <label for="regPhone">Phone Number *</label>
+                <input type="tel" id="regPhone" placeholder="Enter your phone number" required>
+            </div>
+            <div class="form-group">
+                <label for="regAddress">Residential Address</label>
+                <input type="text" id="regAddress" placeholder="Enter your address">
+            </div>
+            <div class="form-group">
+                <label for="regOccupation">Occupation</label>
+                <input type="text" id="regOccupation" placeholder="Enter your occupation">
+            </div>
+            <div class="form-group">
+                <label for="regMonthlyContribution">Preferred Monthly Contribution (GH₵) *</label>
+                <input type="number" id="regMonthlyContribution" min="10" step="0.01" placeholder="50.00" required>
+            </div>
+            <div class="form-group">
+                <label for="regPassword">Create Password *</label>
+                <input type="password" id="regPassword" placeholder="Create a password" required>
+            </div>
+            <div class="form-group">
+                <label for="regConfirmPassword">Confirm Password *</label>
+                <input type="password" id="regConfirmPassword" placeholder="Confirm your password" required>
+            </div>
+            <button type="submit" class="login-btn" id="registerBtn">Register as Member</button>
         </form>
 
         <div class="loading" id="loading">Initializing system...</div>
         <div class="error-message" id="errorMessage"></div>
         <div class="success-message" id="successMessage"></div>
 
+        <div class="switch-text">
+            <a id="adminLoginLink">🔐 Admin Login</a>
+        </div>
+
         <div class="default-credentials">
-            <strong>Default Login:</strong><br>
+            <strong>Admin Login:</strong><br>
             Username: <code>abc</code><br>
             Password: <code>12345</code>
         </div>
@@ -159,6 +273,46 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
+        // Tab switching functionality
+        document.getElementById('loginTab').addEventListener('click', function() {
+            switchToLogin();
+        });
+
+        document.getElementById('registerTab').addEventListener('click', function() {
+            switchToRegister();
+        });
+
+        document.getElementById('adminLoginLink').addEventListener('click', function() {
+            switchToAdminLogin();
+        });
+
+        function switchToLogin() {
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('adminLoginLink').textContent = '🔐 Admin Login';
+        }
+
+        function switchToRegister() {
+            document.getElementById('registerTab').classList.add('active');
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'none';
+            document.getElementById('registerForm').style.display = 'block';
+            document.getElementById('adminLoginLink').textContent = '🔐 Admin Login';
+        }
+
+        function switchToAdminLogin() {
+            document.getElementById('loginTab').classList.add('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+            document.getElementById('adminLoginLink').textContent = '👤 Member Login';
+            document.getElementById('username').placeholder = 'Username (abc)';
+            document.getElementById('password').placeholder = 'Password (12345)';
+            document.querySelector('.default-credentials').style.display = 'block';
+        }
+
         // Show loading initially
         document.getElementById('loading').style.display = 'block';
 
@@ -178,7 +332,8 @@
                         username: 'abc',
                         password: '12345',
                         email: 'admin@sunyaniwelfare.com',
-                        createdAt: new Date().toISOString()
+                        createdAt: new Date().toISOString(),
+                        role: 'administrator'
                     });
                     console.log('Default admin user created successfully');
                     showSuccess('System initialized successfully!');
@@ -195,7 +350,7 @@
             }
         }
 
-        // Login function
+        // Member Login function
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -213,35 +368,145 @@
             try {
                 console.log('Attempting login...');
                 
-                // Check credentials against Firebase
+                // Check if it's admin login
                 const adminRef = database.ref('admin');
-                const snapshot = await adminRef.once('value');
-                const adminData = snapshot.val();
-
-                console.log('Admin data:', adminData);
+                const adminSnapshot = await adminRef.once('value');
+                const adminData = adminSnapshot.val();
 
                 if (adminData && adminData.username === username && adminData.password === password) {
-                    console.log('Login successful');
-                    // Successful login - store session and redirect
+                    // Admin login
+                    console.log('Admin login successful');
                     sessionStorage.setItem('welfare_loggedIn', 'true');
                     sessionStorage.setItem('welfare_username', username);
+                    sessionStorage.setItem('welfare_role', 'admin');
                     sessionStorage.setItem('welfare_lastLogin', new Date().toISOString());
                     
-                    showSuccess('Login successful! Redirecting...');
+                    showSuccess('Admin login successful! Redirecting...');
                     setTimeout(() => {
                         window.location.href = 'dashboard.html';
                     }, 1000);
-                } else {
-                    console.log('Invalid credentials');
-                    showError('Invalid username or password!');
-                    loading.style.display = 'none';
-                    loginBtn.disabled = false;
+                    return;
                 }
+
+                // Check member login
+                const membersRef = database.ref('members');
+                const membersSnapshot = await membersRef.once('value');
+                const members = membersSnapshot.val();
+
+                if (members) {
+                    const member = Object.values(members).find(m => 
+                        (m.email === username || m.id === username) && m.password === password
+                    );
+
+                    if (member) {
+                        console.log('Member login successful');
+                        sessionStorage.setItem('welfare_loggedIn', 'true');
+                        sessionStorage.setItem('welfare_username', member.name);
+                        sessionStorage.setItem('welfare_userId', member.id);
+                        sessionStorage.setItem('welfare_role', 'member');
+                        sessionStorage.setItem('welfare_lastLogin', new Date().toISOString());
+                        
+                        showSuccess('Login successful! Redirecting to your dashboard...');
+                        setTimeout(() => {
+                            window.location.href = 'member-dashboard.html';
+                        }, 1000);
+                    } else {
+                        console.log('Invalid member credentials');
+                        showError('Invalid email/member ID or password!');
+                    }
+                } else {
+                    console.log('No members found');
+                    showError('No members found. Please register first.');
+                }
+                
+                loading.style.display = 'none';
+                loginBtn.disabled = false;
             } catch (error) {
                 console.error('Login error:', error);
                 showError('Login failed: ' + error.message);
                 loading.style.display = 'none';
                 loginBtn.disabled = false;
+            }
+        });
+
+        // Member Registration function
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fullName = document.getElementById('regFullName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const address = document.getElementById('regAddress').value.trim();
+            const occupation = document.getElementById('regOccupation').value.trim();
+            const monthlyContribution = parseFloat(document.getElementById('regMonthlyContribution').value);
+            const password = document.getElementById('regPassword').value;
+            const confirmPassword = document.getElementById('regConfirmPassword').value;
+
+            const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
+            const registerBtn = document.getElementById('registerBtn');
+
+            // Validation
+            if (password !== confirmPassword) {
+                showError('Passwords do not match!');
+                return;
+            }
+
+            if (monthlyContribution < 10) {
+                showError('Minimum monthly contribution is GH₵ 10.00');
+                return;
+            }
+
+            registerBtn.disabled = true;
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+
+            try {
+                console.log('Processing member registration...');
+                
+                // Check if email already exists
+                const membersRef = database.ref('members');
+                const membersSnapshot = await membersRef.once('value');
+                const members = membersSnapshot.val() || {};
+
+                const emailExists = Object.values(members).some(member => member.email === email);
+                if (emailExists) {
+                    showError('Email already registered! Please use a different email.');
+                    loading.style.display = 'none';
+                    registerBtn.disabled = false;
+                    return;
+                }
+
+                // Create new member
+                const memberId = 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const memberData = {
+                    id: memberId,
+                    name: fullName,
+                    email: email,
+                    phone: phone,
+                    address: address,
+                    occupation: occupation,
+                    monthlyContribution: monthlyContribution,
+                    password: password, // In production, this should be hashed
+                    status: 'active',
+                    joinDate: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                };
+
+                await database.ref('members/' + memberId).set(memberData);
+                console.log('Member registered successfully:', memberId);
+                
+                showSuccess('Registration successful! You can now login with your email.');
+                document.getElementById('registerForm').reset();
+                switchToLogin();
+                
+            } catch (error) {
+                console.error('Registration error:', error);
+                showError('Registration failed: ' + error.message);
+            } finally {
+                loading.style.display = 'none';
+                registerBtn.disabled = false;
             }
         });
 
@@ -270,7 +535,7 @@
 
         // Initialize admin user when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing admin...');
+            console.log('DOM loaded, initializing system...');
             initializeAdminUser();
         });
     </script>
