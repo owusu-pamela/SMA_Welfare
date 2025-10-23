@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SUNYANI MUNICIPAL WELFARE</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -13,7 +15,7 @@
             <div class="header-content">
                 <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
                 <div class="header-actions">
-                    <span class="welcome-msg">Welcome, Admin</span>
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
                     <button id="logoutBtn" class="logout-btn">Logout</button>
                 </div>
             </div>
@@ -32,7 +34,7 @@
         <main class="main-content">
             <div class="page-header">
                 <h2>Dashboard Overview</h2>
-                <p>Welcome to the Sunyani Municipal Welfare Management System</p>
+                <p id="lastUpdate">Welcome to the Sunyani Municipal Welfare Management System</p>
             </div>
 
             <!-- Statistics Cards -->
@@ -109,22 +111,7 @@
         </main>
     </div>
 
+    <script src="js/firebase-config.js"></script>
     <script src="js/dashboard.js"></script>
-    <script>
-        // Logout functionality
-        document.getElementById('logoutBtn').addEventListener('click', function() {
-            if (confirm('Are you sure you want to logout?')) {
-                window.location.href = 'index.html';
-            }
-        });
-
-        // Navigation active state
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', function() {
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                this.classList.add('active');
-            });
-        });
-    </script>
 </body>
 </html>
