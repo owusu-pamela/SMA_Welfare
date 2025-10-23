@@ -28,16 +28,7 @@ function checkAuth() {
     }
     return true;
 }
-// Add to existing WelfareDB object in firebase-config.js
-async updateContribution(contributionId, updates) {
-    try {
-        await database.ref('contributions/' + contributionId).update(updates);
-        console.log('Contribution updated successfully:', contributionId);
-    } catch (error) {
-        console.error('Error updating contribution:', error);
-        throw error;
-    }
-},
+
 // Utility functions for Firebase operations
 const WelfareDB = {
     // Members operations
@@ -79,35 +70,34 @@ const WelfareDB = {
     },
 
     // Contributions operations
-  // In WelfareDB object, update getContributions method:
-async getContributions() {
-    try {
-        const snapshot = await database.ref('contributions').once('value');
-        const contributions = snapshot.val();
-        console.log('Raw contributions from Firebase:', contributions);
-        
-        // If no contributions exist, return empty object
-        if (!contributions) {
-            console.log('No contributions found in database');
+    async getContributions() {
+        try {
+            const snapshot = await database.ref('contributions').once('value');
+            const contributions = snapshot.val();
+            console.log('Raw contributions from Firebase:', contributions);
+            
+            // If no contributions exist, return empty object
+            if (!contributions) {
+                console.log('No contributions found in database');
+                return {};
+            }
+            
+            // Ensure all contributions have proper IDs
+            const contributionsWithIds = {};
+            Object.keys(contributions).forEach(key => {
+                contributionsWithIds[key] = {
+                    ...contributions[key],
+                    id: key // Ensure each contribution has an ID
+                };
+            });
+            
+            console.log('Processed contributions with IDs:', contributionsWithIds);
+            return contributionsWithIds;
+        } catch (error) {
+            console.error('Error fetching contributions:', error);
             return {};
         }
-        
-        // Ensure all contributions have proper IDs
-        const contributionsWithIds = {};
-        Object.keys(contributions).forEach(key => {
-            contributionsWithIds[key] = {
-                ...contributions[key],
-                id: key // Ensure each contribution has an ID
-            };
-        });
-        
-        console.log('Processed contributions with IDs:', contributionsWithIds);
-        return contributionsWithIds;
-    } catch (error) {
-        console.error('Error fetching contributions:', error);
-        return {};
-    }
-},
+    },
 
     async addContribution(contributionData) {
         try {
@@ -121,6 +111,16 @@ async getContributions() {
             return contributionId;
         } catch (error) {
             console.error('Error adding contribution:', error);
+            throw error;
+        }
+    },
+
+    async updateContribution(contributionId, updates) {
+        try {
+            await database.ref('contributions/' + contributionId).update(updates);
+            console.log('Contribution updated successfully:', contributionId);
+        } catch (error) {
+            console.error('Error updating contribution:', error);
             throw error;
         }
     },
