@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Withdrawals - SUNYANI MUNICIPAL WELFARE</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -13,8 +15,9 @@
             <div class="header-content">
                 <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
                 <div class="header-actions">
-                    <span class="welcome-msg">Welcome, Admin</span>
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
                     <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
@@ -35,14 +38,19 @@
                 <p>Manage fund withdrawals and track expenditure</p>
                 <div class="header-actions">
                     <div class="balance-info">
-                        Available Balance: <strong id="availableBalanceWithdraw">GH₵ 0.00</strong>
+                        💰 Available Balance: <strong id="availableBalanceWithdraw">GH₵ 0.00</strong>
                     </div>
                     <button class="btn-primary" onclick="showNewWithdrawalModal()">🏧 New Withdrawal</button>
                 </div>
             </div>
 
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-text">
+                Loading withdrawals...
+            </div>
+
             <!-- Withdrawals Table -->
-            <div class="table-container">
+            <div class="table-container" id="tableContainer" style="display: none;">
                 <table class="data-table">
                     <thead>
                         <tr>
@@ -50,21 +58,19 @@
                             <th>Withdrawal ID</th>
                             <th>Amount</th>
                             <th>Purpose</th>
-                            <th>Approved By</th>
                             <th>Beneficiary</th>
+                            <th>Payment Method</th>
+                            <th>Processed By</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="withdrawalsTableBody">
-                        <tr>
-                            <td colspan="8" class="loading-text">Loading withdrawals...</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Summary -->
+            <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
                     <h4>Total Withdrawals</h4>
@@ -75,15 +81,15 @@
                     <p id="monthWithdrawals">GH₵ 0.00</p>
                 </div>
                 <div class="summary-card">
-                    <h4>Pending Approvals</h4>
-                    <p id="pendingWithdrawals">0</p>
+                    <h4>This Year</h4>
+                    <p id="yearWithdrawals">GH₵ 0.00</p>
                 </div>
             </div>
         </main>
     </div>
 
     <!-- New Withdrawal Modal -->
-    <div id="newWithdrawalModal" class="modal">
+    <div id="newWithdrawalModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>New Withdrawal Request</h3>
@@ -92,12 +98,21 @@
             <form id="newWithdrawalForm">
                 <div class="form-group">
                     <label for="withdrawalAmount">Amount (GH₵) *</label>
-                    <input type="number" id="withdrawalAmount" min="0" step="0.01" required>
-                    <small>Available: <span id="availableBalanceDisplay">GH₵ 0.00</span></small>
+                    <input type="number" id="withdrawalAmount" min="0" step="0.01" required placeholder="0.00">
+                    <small>Available Balance: <span id="availableBalanceDisplay" class="balance-amount">GH₵ 0.00</span></small>
+                    <small id="balanceWarning" class="warning" style="display: none; color: #e74c3c;">⚠️ Insufficient funds!</small>
                 </div>
                 <div class="form-group">
                     <label for="withdrawalPurpose">Purpose/Reason *</label>
-                    <textarea id="withdrawalPurpose" rows="3" required placeholder="Describe the purpose of this withdrawal..."></textarea>
+                    <select id="withdrawalPurpose" required>
+                        <option value="">Select Purpose</option>
+                        <option value="Member Welfare">Member Welfare</option>
+                        <option value="Emergency Support">Emergency Support</option>
+                        <option value="Administrative Costs">Administrative Costs</option>
+                        <option value="Event Funding">Event Funding</option>
+                        <option value="Loan Disbursement">Loan Disbursement</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="withdrawalBeneficiary">Beneficiary *</label>
@@ -114,47 +129,29 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="withdrawalApprover">Approved By *</label>
-                    <input type="text" id="withdrawalApprover" required value="Admin" readonly>
+                    <label for="withdrawalNotes">Additional Notes</label>
+                    <textarea id="withdrawalNotes" rows="3" placeholder="Any additional information about this withdrawal..."></textarea>
+                </div>
+                <div class="withdrawal-summary">
+                    <h4>Withdrawal Summary</h4>
+                    <div class="summary-item">
+                        <span>Amount:</span>
+                        <span id="summaryAmount">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Remaining Balance:</span>
+                        <span id="summaryRemaining">GH₵ 0.00</span>
+                    </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeNewWithdrawalModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Process Withdrawal</button>
+                    <button type="submit" class="btn-primary" id="submitWithdrawalBtn">🏧 Process Withdrawal</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="js/firebase-config.js"></script>
     <script src="js/withdrawals.js"></script>
-    <script>
-        // Modal functions
-        function showNewWithdrawalModal() {
-            document.getElementById('newWithdrawalModal').style.display = 'block';
-            updateAvailableBalanceDisplay();
-        }
-
-        function closeNewWithdrawalModal() {
-            document.getElementById('newWithdrawalModal').style.display = 'none';
-            document.getElementById('newWithdrawalForm').reset();
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('newWithdrawalModal');
-            if (event.target === modal) {
-                closeNewWithdrawalModal();
-            }
-        }
-
-        // Form submission
-        document.getElementById('newWithdrawalForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            processNewWithdrawal();
-        });
-
-        function updateAvailableBalanceDisplay() {
-            // This would be populated from your data
-            document.getElementById('availableBalanceDisplay').textContent = 'GH₵ 0.00';
-        }
-    </script>
 </body>
 </html>
