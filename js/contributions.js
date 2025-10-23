@@ -28,6 +28,8 @@ async function initializeContributions() {
         setupRealtimeListeners();
         populateMemberFilter();
         
+        console.log('Contributions page initialized successfully');
+        
     } catch (error) {
         console.error('Error initializing contributions page:', error);
         showToast('Error loading contributions data', 'error');
@@ -40,22 +42,39 @@ async function loadMembers() {
         console.log('Loading members for contributions...');
         members = await WelfareDB.getMembers();
         console.log('Members loaded:', Object.keys(members).length);
+        
+        if (Object.keys(members).length === 0) {
+            console.log('No members found in database');
+            showToast('No members found. Please add members first.', 'warning');
+        }
     } catch (error) {
         console.error('Error loading members:', error);
         showToast('Error loading members', 'error');
     }
 }
 
-// Load contributions from Firebase
+// Load contributions from Firebase - FIXED VERSION
 async function loadContributions() {
     try {
         console.log('Loading contributions...');
-        contributions = await WelfareDB.getContributions();
-        console.log('Contributions loaded:', Object.keys(contributions).length);
+        const contributionsData = await WelfareDB.getContributions();
+        console.log('Raw contributions data:', contributionsData);
+        
+        // Convert Firebase object to our contributions object
+        contributions = contributionsData || {};
+        
+        console.log('Contributions loaded successfully. Count:', Object.keys(contributions).length);
+        
+        if (Object.keys(contributions).length === 0) {
+            console.log('No contributions found in database');
+            showToast('No contributions found. Record your first payment!', 'info');
+        }
+        
         applyFilters();
+        
     } catch (error) {
         console.error('Error loading contributions:', error);
-        showToast('Error loading contributions', 'error');
+        showToast('Error loading contributions: ' + error.message, 'error');
     }
 }
 
@@ -65,14 +84,14 @@ function setupRealtimeListeners() {
     
     WelfareDB.onMembersChange((newMembers) => {
         console.log('Members updated in real-time');
-        members = newMembers;
+        members = newMembers || {};
         populateMemberFilter();
         applyFilters(); // Re-apply filters to update display
     });
 
     WelfareDB.onContributionsChange((newContributions) => {
         console.log('Contributions updated in real-time');
-        contributions = newContributions;
+        contributions = newContributions || {};
         applyFilters();
     });
 }
@@ -90,27 +109,39 @@ function populateMemberFilter() {
         paymentMember.remove(1);
     }
     
+    // Check if we have members
+    if (Object.keys(members).length === 0) {
+        console.log('No members available for filter dropdown');
+        return;
+    }
+    
     // Add member options
     Object.values(members).forEach(member => {
-        const option1 = document.createElement('option');
-        option1.value = member.id;
-        option1.textContent = `${member.name} (GH₵ ${parseFloat(member.monthlyContribution || 0).toFixed(2)})`;
-        memberFilter.appendChild(option1);
-        
-        const option2 = document.createElement('option');
-        option2.value = member.id;
-        option2.textContent = `${member.name} - GH₵ ${parseFloat(member.monthlyContribution || 0).toFixed(2)}/month`;
-        paymentMember.appendChild(option2);
+        if (member && member.name) {
+            const option1 = document.createElement('option');
+            option1.value = member.id;
+            option1.textContent = `${member.name} (GH₵ ${parseFloat(member.monthlyContribution || 0).toFixed(2)})`;
+            memberFilter.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = member.id;
+            option2.textContent = `${member.name} - GH₵ ${parseFloat(member.monthlyContribution || 0).toFixed(2)}/month`;
+            paymentMember.appendChild(option2);
+        }
     });
     
     console.log('Member filter populated with', Object.keys(members).length, 'members');
 }
 
-// Apply filters to contributions
+// Apply filters to contributions - FIXED VERSION
 function applyFilters() {
     console.log('Applying filters:', currentFilters);
+    console.log('Available contributions:', Object.keys(contributions).length);
     
-    const filteredContributions = Object.values(contributions).filter(contribution => {
+    // Convert contributions object to array and filter
+    const contributionsArray = Object.values(contributions).filter(contribution => {
+        if (!contribution) return false;
+        
         // Month filter
         if (currentFilters.month && contribution.month != currentFilters.month) {
             return false;
@@ -129,15 +160,18 @@ function applyFilters() {
         return true;
     });
     
-    renderContributionsTable(filteredContributions);
-    updateSummaryCards(filteredContributions);
+    console.log('Filtered contributions:', contributionsArray.length);
+    renderContributionsTable(contributionsArray);
+    updateSummaryCards(contributionsArray);
 }
 
-// Render contributions table
+// Render contributions table - FIXED VERSION
 function renderContributionsTable(contributionsArray) {
     const tbody = document.getElementById('contributionsTableBody');
     const loadingState = document.getElementById('loadingState');
     const tableContainer = document.getElementById('tableContainer');
+    
+    console.log('Rendering contributions table with', contributionsArray.length, 'records');
     
     if (contributionsArray.length === 0) {
         loadingState.innerHTML = 'No contributions found matching your filters.';
@@ -146,25 +180,40 @@ function renderContributionsTable(contributionsArray) {
     }
     
     // Sort by date (newest first)
-    contributionsArray.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    contributionsArray.sort((a, b) => {
+        const dateA = new Date(a.timestamp || a.paymentDate || Date.now());
+        const dateB = new Date(b.timestamp || b.paymentDate || Date.now());
+        return dateB - dateA;
+    });
     
     loadingState.style.display = 'none';
     tableContainer.style.display = 'block';
     
     tbody.innerHTML = contributionsArray.map(contribution => {
-        const member = members[contribution.memberId];
-        const memberName = member ? member.name : 'Unknown Member';
-        const paymentDate = new Date(contribution.timestamp);
+        // Safely get member name
+        let memberName = 'Unknown Member';
+        if (contribution.memberId && members[contribution.memberId]) {
+            memberName = members[contribution.memberId].name;
+        } else if (contribution.memberName) {
+            memberName = contribution.memberName;
+        }
+        
+        const paymentDate = new Date(contribution.timestamp || contribution.paymentDate || Date.now());
+        const amount = parseFloat(contribution.amount || 0);
+        const month = contribution.month || new Date(paymentDate).getMonth() + 1;
+        const year = contribution.year || new Date(paymentDate).getFullYear();
+        const paymentMethod = contribution.paymentMethod || 'Cash';
+        const recordedBy = contribution.recordedBy || 'Admin';
         
         return `
             <tr>
                 <td>${paymentDate.toLocaleDateString()}<br><small>${paymentDate.toLocaleTimeString()}</small></td>
                 <td><strong>${memberName}</strong></td>
-                <td>${getMonthName(contribution.month)}</td>
-                <td>${contribution.year}</td>
-                <td><strong class="amount">GH₵ ${parseFloat(contribution.amount).toFixed(2)}</strong></td>
-                <td>${contribution.paymentMethod || 'Cash'}</td>
-                <td>${contribution.recordedBy || 'Admin'}</td>
+                <td>${getMonthName(month)}</td>
+                <td>${year}</td>
+                <td><strong class="amount">GH₵ ${amount.toFixed(2)}</strong></td>
+                <td>${paymentMethod}</td>
+                <td>${recordedBy}</td>
                 <td><span class="status-active">Paid</span></td>
                 <td>
                     <button class="btn-secondary" onclick="editContribution('${contribution.id}')">✏️ Edit</button>
@@ -175,10 +224,10 @@ function renderContributionsTable(contributionsArray) {
     }).join('');
 }
 
-// Update summary cards
+// Update summary cards - FIXED VERSION
 function updateSummaryCards(contributionsArray) {
     const totalAmount = contributionsArray.reduce((sum, contribution) => {
-        return sum + (parseFloat(contribution.amount) || 0);
+        return sum + (parseFloat(contribution.amount || 0));
     }, 0);
     
     const averagePayment = contributionsArray.length > 0 ? totalAmount / contributionsArray.length : 0;
@@ -186,10 +235,18 @@ function updateSummaryCards(contributionsArray) {
     document.getElementById('filteredTotal').textContent = `GH₵ ${totalAmount.toFixed(2)}`;
     document.getElementById('totalRecords').textContent = contributionsArray.length;
     document.getElementById('averagePayment').textContent = `GH₵ ${averagePayment.toFixed(2)}`;
+    
+    console.log('Summary updated - Total:', totalAmount, 'Records:', contributionsArray.length);
 }
 
 // Show record payment modal
 function showRecordPaymentModal() {
+    // Check if we have members
+    if (Object.keys(members).length === 0) {
+        showToast('No members available. Please add members first.', 'warning');
+        return;
+    }
+    
     // Reset form and set default values
     document.getElementById('recordPaymentForm').reset();
     
@@ -236,7 +293,7 @@ function setupPaymentFormListeners() {
     });
 }
 
-// Record new payment
+// Record new payment - FIXED VERSION
 async function recordNewPayment() {
     const memberId = document.getElementById('paymentMember').value;
     const amount = parseFloat(document.getElementById('paymentAmount').value);
@@ -271,6 +328,7 @@ async function recordNewPayment() {
 
         // Check if payment already exists for this member, month, and year
         const existingPayment = Object.values(contributions).find(contribution => 
+            contribution && 
             contribution.memberId === memberId && 
             contribution.month == month && 
             contribution.year == year
@@ -279,6 +337,8 @@ async function recordNewPayment() {
         if (existingPayment) {
             const overwrite = confirm(`${member.name} already has a payment recorded for ${getMonthName(month)} ${year}. Do you want to overwrite it?`);
             if (!overwrite) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
                 return;
             }
         }
@@ -291,7 +351,8 @@ async function recordNewPayment() {
             year: parseInt(year),
             paymentMethod: paymentMethod,
             notes: notes,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            recordedBy: sessionStorage.getItem('welfare_username') || 'Admin'
         };
 
         console.log('Recording new payment:', contributionData);
@@ -317,7 +378,8 @@ function editContribution(contributionId) {
     if (contribution) {
         const newAmount = prompt(`Edit payment amount for ${contribution.memberName}:`, contribution.amount);
         if (newAmount && !isNaN(parseFloat(newAmount)) && parseFloat(newAmount) > 0) {
-            WelfareDB.updateContribution(contributionId, {
+            // Use direct Firebase update since we don't have updateContribution in WelfareDB
+            database.ref('contributions/' + contributionId).update({
                 amount: parseFloat(newAmount),
                 updatedAt: new Date().toISOString()
             })
@@ -336,7 +398,6 @@ function editContribution(contributionId) {
 function deleteContribution(contributionId) {
     const contribution = contributions[contributionId];
     if (contribution && confirm(`Are you sure you want to delete this payment record for ${contribution.memberName}?`)) {
-        // Note: You'll need to add deleteContribution method to WelfareDB
         database.ref('contributions/' + contributionId).remove()
             .then(() => {
                 showToast('Payment record deleted successfully', 'success');
@@ -349,7 +410,7 @@ function deleteContribution(contributionId) {
 }
 
 // Filter functions
-function applyFilters() {
+function applyFiltersFromUI() {
     currentFilters.month = document.getElementById('monthFilter').value;
     currentFilters.year = document.getElementById('yearFilter').value;
     currentFilters.member = document.getElementById('memberFilter').value;
@@ -386,11 +447,6 @@ function logout() {
     }
 }
 
-// Add updateContribution method to WelfareDB
-WelfareDB.updateContribution = async function(contributionId, updates) {
-    await database.ref('contributions/' + contributionId).update(updates);
-};
-
 // Event listeners
 document.getElementById('recordPaymentForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -406,9 +462,9 @@ window.onclick = function(event) {
 }
 
 // Filter event listeners
-document.getElementById('monthFilter').addEventListener('change', applyFilters);
-document.getElementById('yearFilter').addEventListener('change', applyFilters);
-document.getElementById('memberFilter').addEventListener('change', applyFilters);
+document.getElementById('monthFilter').addEventListener('change', applyFiltersFromUI);
+document.getElementById('yearFilter').addEventListener('change', applyFiltersFromUI);
+document.getElementById('memberFilter').addEventListener('change', applyFiltersFromUI);
 
 // Initialize contributions when page loads
 document.addEventListener('DOMContentLoaded', function() {
