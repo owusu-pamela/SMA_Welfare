@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SUNYANI MUNICIPAL WELFARE - Login</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -91,6 +94,12 @@
             margin-top: 1rem;
             display: none;
         }
+
+        .loading {
+            display: none;
+            color: #3498db;
+            margin-top: 1rem;
+        }
     </style>
 </head>
 <body>
@@ -106,9 +115,8 @@
             <button type="submit" class="login-btn">Login</button>
         </form>
 
-        <div class="error-message" id="errorMessage">
-            Invalid username or password!
-        </div>
+        <div class="loading" id="loading">Initializing system...</div>
+        <div class="error-message" id="errorMessage">Invalid username or password!</div>
 
         <div class="default-credentials">
             <strong>Default Login:</strong><br>
@@ -118,19 +126,85 @@
     </div>
 
     <script>
-        document.getElementById('loginForm').addEventListener('submit', function(e) {
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
+            authDomain: "sunyani-municipal-welfare.firebaseapp.com",
+            databaseURL: "https://sunyani-municipal-welfare-default-rtdb.firebaseio.com",
+            projectId: "sunyani-municipal-welfare",
+            storageBucket: "sunyani-municipal-welfare.firebasestorage.app",
+            messagingSenderId: "690980483755",
+            appId: "1:690980483755:web:ce9bc7dcea698bd6d7fdee",
+            measurementId: "G-KRG057K0VW"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        // Show loading initially
+        document.getElementById('loading').style.display = 'block';
+
+        // Initialize default admin user
+        async function initializeAdminUser() {
+            try {
+                // Check if admin user exists
+                const adminRef = database.ref('admin');
+                const snapshot = await adminRef.once('value');
+                
+                if (!snapshot.exists()) {
+                    // Create default admin user
+                    await adminRef.set({
+                        username: 'abc',
+                        password: '12345', // In production, this should be hashed
+                        email: 'admin@sunyaniwelfare.com',
+                        createdAt: new Date().toISOString()
+                    });
+                    console.log('Default admin user created');
+                }
+                
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                console.error('Error initializing admin:', error);
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Login function
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             const errorMessage = document.getElementById('errorMessage');
+            const loading = document.getElementById('loading');
 
-            // Default credentials
-            if (username === 'abc' && password === '12345') {
-                // Successful login - redirect to dashboard
-                window.location.href = 'dashboard.html';
-            } else {
+            loading.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            try {
+                // Check credentials against Firebase
+                const adminRef = database.ref('admin');
+                const snapshot = await adminRef.once('value');
+                const adminData = snapshot.val();
+
+                if (adminData && adminData.username === username && adminData.password === password) {
+                    // Successful login - store session and redirect
+                    sessionStorage.setItem('welfare_loggedIn', 'true');
+                    sessionStorage.setItem('welfare_username', username);
+                    sessionStorage.setItem('welfare_lastLogin', new Date().toISOString());
+                    
+                    window.location.href = 'dashboard.html';
+                } else {
+                    errorMessage.style.display = 'block';
+                    loading.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                errorMessage.textContent = 'Login failed. Please try again.';
                 errorMessage.style.display = 'block';
+                loading.style.display = 'none';
             }
         });
 
@@ -142,6 +216,9 @@
         document.getElementById('password').addEventListener('input', function() {
             document.getElementById('errorMessage').style.display = 'none';
         });
+
+        // Initialize admin user when page loads
+        initializeAdminUser();
     </script>
 </body>
 </html>
