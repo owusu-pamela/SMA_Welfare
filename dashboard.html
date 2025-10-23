@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="header-actions">
+                    <span class="welcome-msg">Welcome, Admin</span>
+                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <a href="dashboard.html" class="nav-link active">🏠 Dashboard</a>
+            <a href="members.html" class="nav-link">👥 Members</a>
+            <a href="contributions.html" class="nav-link">💰 Contributions</a>
+            <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="reports.html" class="nav-link">📊 Reports</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Dashboard Overview</h2>
+                <p>Welcome to the Sunyani Municipal Welfare Management System</p>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3>Total Members</h3>
+                        <p class="stat-number" id="totalMembers">0</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>Total Contributions</h3>
+                        <p class="stat-number" id="totalContributions">GH₵ 0.00</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🏦</div>
+                    <div class="stat-info">
+                        <h3>Available Balance</h3>
+                        <p class="stat-number" id="availableBalance">GH₵ 0.00</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <h3>This Month's Collection</h3>
+                        <p class="stat-number" id="monthlyCollection">GH₵ 0.00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h3>Quick Actions</h3>
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="location.href='members.html?action=add'">
+                        ➕ Add New Member
+                    </button>
+                    <button class="action-btn" onclick="location.href='contributions.html?action=record'">
+                        💳 Record Payment
+                    </button>
+                    <button class="action-btn" onclick="location.href='withdrawals.html?action=new'">
+                        🏧 New Withdrawal
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Reminders -->
+            <div class="dashboard-sections">
+                <div class="section">
+                    <h3>📋 Payment Reminders</h3>
+                    <div class="reminders-list" id="remindersList">
+                        <div class="reminder-item">
+                            <span class="member-name">Loading reminders...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>🕒 Recent Activities</h3>
+                    <div class="activities-list" id="activitiesList">
+                        <div class="activity-item">
+                            <span class="activity-text">Loading activities...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="js/dashboard.js"></script>
+    <script>
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', function() {
+            if (confirm('Are you sure you want to logout?')) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // Navigation active state
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function() {
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contributions - SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="header-actions">
+                    <span class="welcome-msg">Welcome, Admin</span>
+                    <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
+            <a href="members.html" class="nav-link">👥 Members</a>
+            <a href="contributions.html" class="nav-link active">💰 Contributions</a>
+            <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="reports.html" class="nav-link">📊 Reports</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Contribution Records</h2>
+                <p>Track all member contributions and payment history</p>
+                <button class="btn-primary" onclick="showRecordPaymentModal()">💳 Record Payment</button>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <select id="monthFilter">
+                    <option value="">All Months</option>
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+                <select id="yearFilter">
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                </select>
+                <select id="memberFilter">
+                    <option value="">All Members</option>
+                </select>
+                <button class="btn-secondary" onclick="applyFilters()">Apply Filters</button>
+            </div>
+
+            <!-- Contributions Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Member Name</th>
+                            <th>Month</th>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Received By</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contributionsTableBody">
+                        <tr>
+                            <td colspan="8" class="loading-text">Loading contributions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h4>Total Filtered Amount</h4>
+                    <p id="filteredTotal">GH₵ 0.00</p>
+                </div>
+                <div class="summary-card">
+                    <h4>Total Records</h4>
+                    <p id="totalRecords">0</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Record Payment Modal -->
+    <div id="recordPaymentModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Record Payment</h3>
+                <button class="close-btn" onclick="closeRecordPaymentModal()">&times;</button>
+            </div>
+            <form id="recordPaymentForm">
+                <div class="form-group">
+                    <label for="paymentMember">Member *</label>
+                    <select id="paymentMember" required>
+                        <option value="">Select Member</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMonth">Month *</label>
+                    <select id="paymentMonth" required>
+                        <option value="">Select Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentYear">Year *</label>
+                    <select id="paymentYear" required>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentAmount">Amount (GH₵) *</label>
+                    <input type="number" id="paymentAmount" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method</label>
+                    <select id="paymentMethod">
+                        <option value="Cash">Cash</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeRecordPaymentModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">Record Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/contributions.js"></script>
+    <script>
+        // Modal functions
+        function showRecordPaymentModal() {
+            document.getElementById('recordPaymentModal').style.display = 'block';
+            loadMembersForPayment();
+        }
+
+        function closeRecordPaymentModal() {
+            document.getElementById('recordPaymentModal').style.display = 'none';
+            document.getElementById('recordPaymentForm').reset();
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('recordPaymentModal');
+            if (event.target === modal) {
+                closeRecordPaymentModal();
+            }
+        }
+
+        // Form submission
+        document.getElementById('recordPaymentForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            recordNewPayment();
+        });
+
+        // Filter functionality
+        function applyFilters() {
+            loadContributions();
+        }
+    </script>
+</body>
+</html>
