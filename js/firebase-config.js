@@ -79,15 +79,35 @@ const WelfareDB = {
     },
 
     // Contributions operations
-    async getContributions() {
-        try {
-            const snapshot = await database.ref('contributions').once('value');
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error fetching contributions:', error);
+  // In WelfareDB object, update getContributions method:
+async getContributions() {
+    try {
+        const snapshot = await database.ref('contributions').once('value');
+        const contributions = snapshot.val();
+        console.log('Raw contributions from Firebase:', contributions);
+        
+        // If no contributions exist, return empty object
+        if (!contributions) {
+            console.log('No contributions found in database');
             return {};
         }
-    },
+        
+        // Ensure all contributions have proper IDs
+        const contributionsWithIds = {};
+        Object.keys(contributions).forEach(key => {
+            contributionsWithIds[key] = {
+                ...contributions[key],
+                id: key // Ensure each contribution has an ID
+            };
+        });
+        
+        console.log('Processed contributions with IDs:', contributionsWithIds);
+        return contributionsWithIds;
+    } catch (error) {
+        console.error('Error fetching contributions:', error);
+        return {};
+    }
+},
 
     async addContribution(contributionData) {
         try {
