@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Contributions - SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Member</span>
+                    <button onclick="location.href='member-dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <a href="member-dashboard.html" class="nav-link">🏠 My Dashboard</a>
+            <a href="member-profile.html" class="nav-link">👤 My Profile</a>
+            <a href="member-contributions.html" class="nav-link active">💰 My Contributions</a>
+            <a href="member-welfare.html" class="nav-link">🛡️ Welfare Services</a>
+            <a href="member-withdrawals.html" class="nav-link">🏧 My Withdrawals</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>My Contributions</h2>
+                <p>View your contribution history and make new payments</p>
+                <button class="btn-primary" onclick="makePayment()">💳 Make Payment</button>
+            </div>
+
+            <!-- Contribution Summary -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <h4>Total Paid</h4>
+                    <p id="totalPaidAmount">GH₵ 0.00</p>
+                </div>
+                <div class="summary-card">
+                    <h4>This Year</h4>
+                    <p id="yearPaidAmount">GH₵ 0.00</p>
+                </div>
+                <div class="summary-card">
+                    <h4>Monthly Average</h4>
+                    <p id="averagePayment">GH₵ 0.00</p>
+                </div>
+                <div class="summary-card">
+                    <h4>Payment Streak</h4>
+                    <p id="paymentStreak">0 months</p>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="contributionYearFilter">Year:</label>
+                    <select id="contributionYearFilter">
+                        <option value="">All Years</option>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="contributionMonthFilter">Month:</label>
+                    <select id="contributionMonthFilter">
+                        <option value="">All Months</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="applyFilters()">🔍 Apply Filters</button>
+                <button class="btn-secondary" onclick="clearFilters()">🔄 Clear</button>
+            </div>
+
+            <!-- Payment Calendar -->
+            <div class="payment-calendar">
+                <h3>📅 Payment Calendar</h3>
+                <div class="calendar-years" id="calendarYears">
+                    <!-- Years will be generated here -->
+                </div>
+            </div>
+
+            <!-- Contributions Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Month</th>
+                            <th>Year</th>
+                            <th>Amount</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Reference</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contributionsTableBody">
+                        <tr>
+                            <td colspan="8" class="loading-text">Loading your contributions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- No Contributions Message -->
+            <div id="noContributions" class="empty-state" style="display: none;">
+                <div class="empty-icon">💰</div>
+                <h3>No Contributions Yet</h3>
+                <p>You haven't made any contributions yet. Start by making your first payment!</p>
+                <button class="btn-primary" onclick="makePayment()">Make First Payment</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Make Payment Modal -->
+    <div id="paymentModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Make Payment</h3>
+                <button class="close-btn" onclick="closePaymentModal()">&times;</button>
+            </div>
+            <form id="paymentForm">
+                <div class="form-group">
+                    <label for="paymentAmount">Amount (GH₵) *</label>
+                    <input type="number" id="paymentAmount" min="0" step="0.01" required>
+                    <small>Your monthly contribution: <span id="monthlyContributionDisplay">GH₵ 0.00</span></small>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMonth">For Month *</label>
+                    <select id="paymentMonth" required>
+                        <option value="">Select Month</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentYear">Year *</label>
+                    <select id="paymentYear" required>
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentMethod">Payment Method *</label>
+                    <select id="paymentMethod" required>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentReference">Payment Reference *</label>
+                    <input type="text" id="paymentReference" required placeholder="Transaction ID or reference number">
+                    <small>Please provide your transaction reference for verification</small>
+                </div>
+                <div class="form-group">
+                    <label for="paymentNotes">Additional Notes</label>
+                    <textarea id="paymentNotes" rows="3" placeholder="Any additional information about this payment..."></textarea>
+                </div>
+                <div class="payment-summary">
+                    <h4>Payment Summary</h4>
+                    <div class="summary-item">
+                        <span>Amount:</span>
+                        <span id="summaryPaymentAmount">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>For:</span>
+                        <span id="summaryPaymentPeriod">Month Year</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Status:</span>
+                        <span class="status-pending">Pending Verification</span>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">💳 Submit Payment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/member-contributions.js"></script>
+</body>
+</html>

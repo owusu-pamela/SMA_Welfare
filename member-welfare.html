@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welfare Services - SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Member</span>
+                    <button onclick="location.href='member-dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <a href="member-dashboard.html" class="nav-link">🏠 My Dashboard</a>
+            <a href="member-profile.html" class="nav-link">👤 My Profile</a>
+            <a href="member-contributions.html" class="nav-link">💰 My Contributions</a>
+            <a href="member-welfare.html" class="nav-link active">🛡️ Welfare Services</a>
+            <a href="member-withdrawals.html" class="nav-link">🏧 My Withdrawals</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Welfare Services</h2>
+                <p>Access welfare benefits and support services</p>
+                <button class="btn-primary" onclick="showApplicationModal()">📝 Apply for Welfare</button>
+            </div>
+
+            <!-- Welfare Eligibility -->
+            <div class="eligibility-card">
+                <h3>🎯 Your Welfare Eligibility</h3>
+                <div class="eligibility-status">
+                    <div class="eligibility-item">
+                        <span class="eligibility-label">Membership Duration:</span>
+                        <span class="eligibility-value" id="membershipDuration">0 months</span>
+                    </div>
+                    <div class="eligibility-item">
+                        <span class="eligibility-label">Total Contributions:</span>
+                        <span class="eligibility-value" id="totalContributionsEligibility">GH₵ 0.00</span>
+                    </div>
+                    <div class="eligibility-item">
+                        <span class="eligibility-label">Payment Consistency:</span>
+                        <span class="eligibility-value" id="paymentConsistency">0%</span>
+                    </div>
+                    <div class="eligibility-item">
+                        <span class="eligibility-label">Overall Eligibility:</span>
+                        <span class="eligibility-value" id="overallEligibility">Not Eligible</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Welfare Services Grid -->
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">🏥</div>
+                    <h4>Medical Support</h4>
+                    <p>Financial assistance for medical emergencies and healthcare expenses</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 5,000</span>
+                        <span class="service-requirement">Min. 6 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('medical')">Apply Now</button>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">🎓</div>
+                    <h4>Education Support</h4>
+                    <p>Support for educational expenses for members and dependents</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 3,000</span>
+                        <span class="service-requirement">Min. 12 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('education')">Apply Now</button>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">🏠</div>
+                    <h4>Housing Support</h4>
+                    <p>Assistance with rent, repairs, and housing-related emergencies</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 2,500</span>
+                        <span class="service-requirement">Min. 9 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('housing')">Apply Now</button>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">⚰️</div>
+                    <h4>Bereavement Support</h4>
+                    <p>Financial support during bereavement of immediate family members</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 1,500</span>
+                        <span class="service-requirement">Min. 3 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('bereavement')">Apply Now</button>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">🚗</div>
+                    <h4>Emergency Support</h4>
+                    <p>Quick financial assistance for unexpected emergencies</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 1,000</span>
+                        <span class="service-requirement">Min. 3 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('emergency')">Apply Now</button>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">💼</div>
+                    <h4>Business Support</h4>
+                    <p>Support for small business development and entrepreneurship</p>
+                    <div class="service-details">
+                        <span class="service-amount">Up to GH₵ 4,000</span>
+                        <span class="service-requirement">Min. 18 months membership</span>
+                    </div>
+                    <button class="btn-primary" onclick="applyForService('business')">Apply Now</button>
+                </div>
+            </div>
+
+            <!-- My Applications -->
+            <div class="applications-section">
+                <h3>📋 My Welfare Applications</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date Applied</th>
+                                <th>Service Type</th>
+                                <th>Amount Requested</th>
+                                <th>Purpose</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="applicationsTableBody">
+                            <tr>
+                                <td colspan="7" class="loading-text">Loading your applications...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="noApplications" class="empty-state" style="display: none;">
+                    <div class="empty-icon">📝</div>
+                    <h3>No Applications Yet</h3>
+                    <p>You haven't applied for any welfare services yet. Browse the services above to get started.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Application Modal -->
+    <div id="applicationModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Apply for Welfare Support</h3>
+                <button class="close-btn" onclick="closeApplicationModal()">&times;</button>
+            </div>
+            <form id="applicationForm">
+                <div class="form-group">
+                    <label for="applicationType">Service Type *</label>
+                    <select id="applicationType" required>
+                        <option value="">Select Service Type</option>
+                        <option value="medical">🏥 Medical Support</option>
+                        <option value="education">🎓 Education Support</option>
+                        <option value="housing">🏠 Housing Support</option>
+                        <option value="bereavement">⚰️ Bereavement Support</option>
+                        <option value="emergency">🚗 Emergency Support</option>
+                        <option value="business">💼 Business Support</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationAmount">Amount Requested (GH₵) *</label>
+                    <input type="number" id="applicationAmount" min="100" max="5000" step="100" required>
+                    <small id="amountGuidance">Maximum amount for this service: GH₵ 0.00</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationPurpose">Purpose/Reason *</label>
+                    <textarea id="applicationPurpose" rows="4" required placeholder="Please describe why you need this support..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationUrgency">Urgency Level</label>
+                    <select id="applicationUrgency">
+                        <option value="low">Low - Can wait 2+ weeks</option>
+                        <option value="medium">Medium - Needed within 2 weeks</option>
+                        <option value="high">High - Needed immediately</option>
+                        <option value="emergency">Emergency - Critical situation</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationDocuments">Supporting Documents</label>
+                    <textarea id="applicationDocuments" rows="3" placeholder="List any documents you can provide (medical reports, bills, quotes, etc.)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="applicationBankDetails">Bank Details for Payment</label>
+                    <input type="text" id="applicationBankDetails" placeholder="Bank Name, Account Number, Account Name">
+                </div>
+                
+                <div class="application-summary">
+                    <h4>Application Summary</h4>
+                    <div class="summary-item">
+                        <span>Service:</span>
+                        <span id="summaryServiceType">-</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Amount:</span>
+                        <span id="summaryAmount">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Your Eligibility:</span>
+                        <span id="summaryEligibility" class="status-pending">Checking...</span>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeApplicationModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitApplicationBtn">📝 Submit Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/member-welfare.js"></script>
+</body>
+</html>

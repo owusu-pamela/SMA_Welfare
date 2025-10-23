@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Withdrawals - SUNYANI MUNICIPAL WELFARE</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Member</span>
+                    <button onclick="location.href='member-dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="main-nav">
+            <a href="member-dashboard.html" class="nav-link">🏠 My Dashboard</a>
+            <a href="member-profile.html" class="nav-link">👤 My Profile</a>
+            <a href="member-contributions.html" class="nav-link">💰 My Contributions</a>
+            <a href="member-welfare.html" class="nav-link">🛡️ Welfare Services</a>
+            <a href="member-withdrawals.html" class="nav-link active">🏧 My Withdrawals</a>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="page-header">
+                <h2>My Withdrawals</h2>
+                <p>Request withdrawals from your accumulated savings</p>
+                <button class="btn-primary" onclick="showWithdrawalModal()">🏧 Request Withdrawal</button>
+            </div>
+
+            <!-- Withdrawal Balance Summary -->
+            <div class="balance-summary">
+                <div class="balance-card">
+                    <div class="balance-icon">💰</div>
+                    <div class="balance-info">
+                        <h3>Available for Withdrawal</h3>
+                        <p class="balance-amount" id="availableWithdrawalBalance">GH₵ 0.00</p>
+                        <p class="balance-note">50% of your total contributions</p>
+                    </div>
+                </div>
+                
+                <div class="balance-details">
+                    <div class="balance-detail">
+                        <span>Total Contributions:</span>
+                        <span id="totalContributionsBalance">GH₵ 0.00</span>
+                    </div>
+                    <div class="balance-detail">
+                        <span>Previous Withdrawals:</span>
+                        <span id="previousWithdrawals">GH₵ 0.00</span>
+                    </div>
+                    <div class="balance-detail">
+                        <span>Withdrawal Limit:</span>
+                        <span>50% of total</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Withdrawal Rules -->
+            <div class="rules-card">
+                <h3>📋 Withdrawal Rules & Guidelines</h3>
+                <div class="rules-list">
+                    <div class="rule-item">
+                        <span class="rule-icon">✅</span>
+                        <span>You can withdraw up to 50% of your total contributions</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-icon">✅</span>
+                        <span>Minimum withdrawal amount: GH₵ 100.00</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-icon">✅</span>
+                        <span>Maximum withdrawal amount: GH₵ 5,000.00 per request</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-icon">✅</span>
+                        <span>Withdrawal requests are processed within 3-5 working days</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-icon">✅</span>
+                        <span>You must have at least 3 months of consistent payments</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Withdrawal Options -->
+            <div class="quick-withdrawals">
+                <h3>💡 Quick Withdrawal Amounts</h3>
+                <div class="quick-amounts">
+                    <button class="quick-amount-btn" onclick="setQuickAmount(100)">GH₵ 100</button>
+                    <button class="quick-amount-btn" onclick="setQuickAmount(200)">GH₵ 200</button>
+                    <button class="quick-amount-btn" onclick="setQuickAmount(500)">GH₵ 500</button>
+                    <button class="quick-amount-btn" onclick="setQuickAmount(1000)">GH₵ 1,000</button>
+                    <button class="quick-amount-btn" onclick="setQuickAmount(2000)">GH₵ 2,000</button>
+                </div>
+            </div>
+
+            <!-- My Withdrawal Requests -->
+            <div class="withdrawals-section">
+                <h3>📋 My Withdrawal Requests</h3>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date Requested</th>
+                                <th>Amount</th>
+                                <th>Purpose</th>
+                                <th>Payment Method</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="withdrawalsTableBody">
+                            <tr>
+                                <td colspan="7" class="loading-text">Loading your withdrawal requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="noWithdrawals" class="empty-state" style="display: none;">
+                    <div class="empty-icon">🏧</div>
+                    <h3>No Withdrawal Requests</h3>
+                    <p>You haven't made any withdrawal requests yet. You can request a withdrawal from your available balance.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Withdrawal Request Modal -->
+    <div id="withdrawalModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Request Withdrawal</h3>
+                <button class="close-btn" onclick="closeWithdrawalModal()">&times;</button>
+            </div>
+            <form id="withdrawalForm">
+                <div class="form-group">
+                    <label for="withdrawalAmount">Amount (GH₵) *</label>
+                    <input type="number" id="withdrawalAmount" min="100" max="5000" step="100" required>
+                    <small>Available: <span id="availableBalanceDisplay">GH₵ 0.00</span></small>
+                    <small id="balanceWarning" class="warning" style="display: none;">⚠️ Amount exceeds available balance!</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="withdrawalPurpose">Purpose *</label>
+                    <select id="withdrawalPurpose" required>
+                        <option value="">Select Purpose</option>
+                        <option value="Personal Use">Personal Use</option>
+                        <option value="Education">Education Expenses</option>
+                        <option value="Medical">Medical Bills</option>
+                        <option value="Business">Business Investment</option>
+                        <option value="Family">Family Support</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="withdrawalDescription">Detailed Description *</label>
+                    <textarea id="withdrawalDescription" rows="3" required placeholder="Please provide details about how you plan to use these funds..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="withdrawalPaymentMethod">Preferred Payment Method *</label>
+                    <select id="withdrawalPaymentMethod" required>
+                        <option value="">Select Method</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cash">Cash Pickup</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="withdrawalAccountDetails">Account Details *</label>
+                    <input type="text" id="withdrawalAccountDetails" required placeholder="Mobile Number / Bank Account Number">
+                    <small>Provide your account details for the selected payment method</small>
+                </div>
+                
+                <div class="withdrawal-summary">
+                    <h4>Withdrawal Summary</h4>
+                    <div class="summary-item">
+                        <span>Amount:</span>
+                        <span id="summaryWithdrawalAmount">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Remaining Balance:</span>
+                        <span id="summaryRemainingBalance">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item">
+                        <span>Processing Time:</span>
+                        <span>3-5 working days</span>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeWithdrawalModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitWithdrawalBtn">🏧 Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/member-withdrawals.js"></script>
+</body>
+</html>
