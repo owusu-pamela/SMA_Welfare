@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contributions - SUNYANI MUNICIPAL WELFARE</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="app-container">
@@ -13,8 +15,9 @@
             <div class="header-content">
                 <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
                 <div class="header-actions">
-                    <span class="welcome-msg">Welcome, Admin</span>
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
                     <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
@@ -38,55 +41,69 @@
 
             <!-- Filters -->
             <div class="filters">
-                <select id="monthFilter">
-                    <option value="">All Months</option>
-                    <option value="1">January</option>
-                    <option value="2">February</option>
-                    <option value="3">March</option>
-                    <option value="4">April</option>
-                    <option value="5">May</option>
-                    <option value="6">June</option>
-                    <option value="7">July</option>
-                    <option value="8">August</option>
-                    <option value="9">September</option>
-                    <option value="10">October</option>
-                    <option value="11">November</option>
-                    <option value="12">December</option>
-                </select>
-                <select id="yearFilter">
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                </select>
-                <select id="memberFilter">
-                    <option value="">All Members</option>
-                </select>
-                <button class="btn-secondary" onclick="applyFilters()">Apply Filters</button>
+                <div class="filter-group">
+                    <label for="monthFilter">Month:</label>
+                    <select id="monthFilter">
+                        <option value="">All Months</option>
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="yearFilter">Year:</label>
+                    <select id="yearFilter">
+                        <option value="2024">2024</option>
+                        <option value="2025">2025</option>
+                        <option value="2026">2026</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="memberFilter">Member:</label>
+                    <select id="memberFilter">
+                        <option value="">All Members</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="applyFilters()">🔍 Apply Filters</button>
+                <button class="btn-secondary" onclick="clearFilters()">🔄 Clear</button>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-text">
+                Loading contributions...
             </div>
 
             <!-- Contributions Table -->
-            <div class="table-container">
+            <div class="table-container" id="tableContainer" style="display: none;">
                 <table class="data-table">
                     <thead>
                         <tr>
                             <th>Date</th>
                             <th>Member Name</th>
                             <th>Month</th>
+                            <th>Year</th>
                             <th>Amount</th>
                             <th>Payment Method</th>
-                            <th>Received By</th>
+                            <th>Recorded By</th>
                             <th>Status</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="contributionsTableBody">
-                        <tr>
-                            <td colspan="8" class="loading-text">Loading contributions...</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- Summary -->
+            <!-- Summary Cards -->
             <div class="summary-cards">
                 <div class="summary-card">
                     <h4>Total Filtered Amount</h4>
@@ -96,12 +113,16 @@
                     <h4>Total Records</h4>
                     <p id="totalRecords">0</p>
                 </div>
+                <div class="summary-card">
+                    <h4>Average Payment</h4>
+                    <p id="averagePayment">GH₵ 0.00</p>
+                </div>
             </div>
         </main>
     </div>
 
     <!-- Record Payment Modal -->
-    <div id="recordPaymentModal" class="modal">
+    <div id="recordPaymentModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Record Payment</h3>
@@ -113,6 +134,11 @@
                     <select id="paymentMember" required>
                         <option value="">Select Member</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentAmount">Amount (GH₵) *</label>
+                    <input type="number" id="paymentAmount" min="0" step="0.01" required placeholder="0.00">
+                    <small id="suggestedAmount">Suggested: GH₵ 0.00</small>
                 </div>
                 <div class="form-group">
                     <label for="paymentMonth">Month *</label>
@@ -137,58 +163,31 @@
                     <select id="paymentYear" required>
                         <option value="2024">2024</option>
                         <option value="2025">2025</option>
+                        <option value="2026">2026</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="paymentAmount">Amount (GH₵) *</label>
-                    <input type="number" id="paymentAmount" min="0" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="paymentMethod">Payment Method</label>
-                    <select id="paymentMethod">
+                    <label for="paymentMethod">Payment Method *</label>
+                    <select id="paymentMethod" required>
                         <option value="Cash">Cash</option>
                         <option value="Mobile Money">Mobile Money</option>
                         <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Cheque">Cheque</option>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label for="paymentNotes">Notes</label>
+                    <textarea id="paymentNotes" rows="3" placeholder="Additional notes about this payment..."></textarea>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeRecordPaymentModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">Record Payment</button>
+                    <button type="submit" class="btn-primary" id="submitPaymentBtn">💳 Record Payment</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <script src="js/firebase-config.js"></script>
     <script src="js/contributions.js"></script>
-    <script>
-        // Modal functions
-        function showRecordPaymentModal() {
-            document.getElementById('recordPaymentModal').style.display = 'block';
-            loadMembersForPayment();
-        }
-
-        function closeRecordPaymentModal() {
-            document.getElementById('recordPaymentModal').style.display = 'none';
-            document.getElementById('recordPaymentForm').reset();
-        }
-
-        window.onclick = function(event) {
-            const modal = document.getElementById('recordPaymentModal');
-            if (event.target === modal) {
-                closeRecordPaymentModal();
-            }
-        }
-
-        // Form submission
-        document.getElementById('recordPaymentForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            recordNewPayment();
-        });
-
-        // Filter functionality
-        function applyFilters() {
-            loadContributions();
-        }
-    </script>
 </body>
 </html>
