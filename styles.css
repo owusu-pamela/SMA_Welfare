@@ -2552,3 +2552,243 @@ form {
         font-size: 12px;
     }
 }
+/* Reports & Analytics Styles */
+.templates-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.template-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #1e3c72;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.template-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.template-icon {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.template-card h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.template-card p {
+    margin: 0 0 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.template-meta {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.analytics-widgets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.analytics-widget {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.analytics-widget h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.analytics-widget canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+.checkbox-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+/* Report Type Badges */
+.report-type-financial {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.report-type-members {
+    background: #e8f5e8;
+    color: #27ae60;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.report-type-contributions {
+    background: #fef5e8;
+    color: #f39c12;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.report-type-withdrawals {
+    background: #fde8e8;
+    color: #e74c3c;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.report-type-welfare {
+    background: #e8f4fd;
+    color: #9b59b6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.report-type-comprehensive {
+    background: #2c3e50;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Report Preview */
+.xlarge-modal {
+    max-width: 1000px;
+    max-height: 90vh;
+}
+
+.report-preview {
+    padding: 1rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.preview-header {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.preview-header h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.preview-header p {
+    margin: 0;
+    color: #666;
+}
+
+.preview-frame {
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.preview-info {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 5px;
+}
+
+.preview-info p {
+    margin: 0.25rem 0;
+    color: #666;
+}
+
+.preview-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding: 1rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+/* Custom Report Form Enhancements */
+.form-sections .form-section {
+    margin-bottom: 2rem;
+}
+
+.checkbox-grid label {
+    margin-bottom: 0.5rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .templates-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .analytics-widgets {
+        grid-template-columns: 1fr;
+    }
+    
+    .checkbox-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .preview-actions {
+        flex-direction: column;
+    }
+    
+    .xlarge-modal {
+        margin: 1rem;
+        width: calc(100% - 2rem);
+    }
+}
+
+/* Print Styles for Reports */
+@media print {
+    .app-header,
+    .main-nav,
+    .page-header .header-actions,
+    .action-buttons,
+    .preview-actions {
+        display: none !important;
+    }
+    
+    .report-preview {
+        max-height: none;
+        overflow: visible;
+    }
+    
+    .preview-frame iframe {
+        height: auto;
+        min-height: 100vh;
+    }
+}
