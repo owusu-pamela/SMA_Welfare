@@ -408,7 +408,7 @@ function loadNotifications() {
     `).join('');
 }
 
-// Show payment modal
+// Show payment modal - UPDATED TO USE PAYMENT GATEWAY
 function makePayment() {
     const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
@@ -423,11 +423,21 @@ function makePayment() {
         return;
     }
     
-    document.getElementById('paymentAmount').value = parseFloat(memberData.monthlyDue) || 50.00;
-    document.getElementById('paymentMonth').value = currentMonth;
+    const paymentData = {
+        amount: parseFloat(memberData.monthlyDue) || 50.00,
+        month: currentMonth,
+        year: currentYear,
+        memberId: sessionStorage.getItem('welfare_userId'),
+        memberName: memberData.name,
+        description: `Monthly Contribution - ${getMonthName(currentMonth)} ${currentYear}`,
+        onSuccess: function() {
+            // Refresh dashboard after successful payment
+            location.reload();
+        }
+    };
     
-    updatePaymentSummary();
-    document.getElementById('paymentModal').style.display = 'block';
+    // Use the payment gateway
+    paymentGateway.initiatePayment(paymentData);
 }
 
 // Close payment modal
@@ -463,72 +473,26 @@ function updatePaymentSummary() {
     document.getElementById('summaryTotal').textContent = `GH₵ ${total.toFixed(2)}`;
 }
 
-// Process payment
+// Process payment - UPDATED TO USE PAYMENT GATEWAY
 async function processPayment() {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     const month = parseInt(document.getElementById('paymentMonth').value);
-    const method = document.getElementById('paymentMethod').value;
     const year = new Date().getFullYear();
     
-    if (!amount || !month || !method) {
-        showToast('Please fill all required fields', 'error');
-        return;
-    }
-    
     const paymentData = {
-        memberId: sessionStorage.getItem('welfare_userId'),
-        memberName: memberData.name,
         amount: amount,
         month: month,
         year: year,
-        paymentMethod: method,
-        status: 'pending',
-        timestamp: new Date().toISOString()
+        memberId: sessionStorage.getItem('welfare_userId'),
+        memberName: memberData.name,
+        description: `Monthly Contribution - ${getMonthName(month)} ${year}`,
+        onSuccess: function() {
+            closePaymentModal();
+            location.reload();
+        }
     };
     
-    // Add mobile number if mobile money
-    if (method === 'mobile_money') {
-        const mobileNumber = document.getElementById('mobileNumber').value;
-        if (!mobileNumber) {
-            showToast('Please enter your mobile money number', 'error');
-            return;
-        }
-        paymentData.mobileNumber = mobileNumber;
-    }
-    
-    try {
-        // In a real implementation, this would integrate with a payment gateway
-        // For now, we'll simulate payment processing
-        showLoading('Processing payment...');
-        
-        // Simulate payment processing delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        // Update payment status to completed
-        paymentData.status = 'completed';
-        paymentData.processedAt = new Date().toISOString();
-        
-        // Save to database
-        await WelfareDB.addContribution(paymentData);
-        
-        // Create notification for admin
-        await WelfareDB.addNotification({
-            memberId: sessionStorage.getItem('welfare_userId'),
-            title: 'New Payment Received',
-            message: `${memberData.name} paid GH₵ ${amount.toFixed(2)} for ${getMonthName(month)}`,
-            type: 'payment_received',
-            priority: 'medium'
-        });
-        
-        hideLoading();
-        closePaymentModal();
-        showToast('Payment processed successfully!', 'success');
-        
-    } catch (error) {
-        hideLoading();
-        console.error('Error processing payment:', error);
-        showToast('Error processing payment. Please try again.', 'error');
-    }
+    paymentGateway.initiatePayment(paymentData);
 }
 
 // Apply for welfare
