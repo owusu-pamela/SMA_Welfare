@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Members - SUNYANI MUNICIPAL WELFARE</title>
+    <title>Member Management - Sunyani Municipal Assembly</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System</p>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
                     <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
@@ -22,44 +27,114 @@
             </div>
         </header>
 
-        <!-- Navigation -->
         <nav class="main-nav">
             <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
             <a href="members.html" class="nav-link active">👥 Members</a>
             <a href="contributions.html" class="nav-link">💰 Contributions</a>
             <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link">🛡️ Welfare Management</a>
             <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link">⚙️ Admin Settings</a>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
                 <h2>Member Management</h2>
-                <p>Manage all welfare scheme members and their contributions</p>
-                <button class="btn-primary" onclick="showAddMemberModal()">➕ Add New Member</button>
+                <p>Manage all assembly staff members and their welfare accounts</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showAddMemberModal()">➕ Add New Member</button>
+                    <button class="btn-secondary" onclick="generateMembersReport()">📄 Export Members List</button>
+                </div>
             </div>
 
-            <!-- Loading State -->
-            <div id="loadingState" class="loading-text">
-                Loading members...
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3>Total Members</h3>
+                        <p class="stat-number" id="totalMembers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3>Active Members</h3>
+                        <p class="stat-number" id="activeMembers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>This Month Collection</h3>
+                        <p class="stat-number" id="monthCollection">GH₵ 0.00</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <h3>Pending Approvals</h3>
+                        <p class="stat-number" id="pendingApprovals">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="departmentFilter">Department:</label>
+                    <select id="departmentFilter">
+                        <option value="">All Departments</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Education">Education</option>
+                        <option value="Works">Works</option>
+                        <option value="Planning">Planning</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="paymentFilter">Payment Mode:</label>
+                    <select id="paymentFilter">
+                        <option value="">All Modes</option>
+                        <option value="cash">Cash</option>
+                        <option value="controller">Salary Controller</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="applyFilters()">🔍 Apply Filters</button>
+                <button class="btn-secondary" onclick="clearFilters()">🔄 Clear</button>
             </div>
 
             <!-- Members Table -->
-            <div class="table-container" id="tableContainer" style="display: none;">
+            <div class="table-container">
                 <table class="data-table">
                     <thead>
                         <tr>
-                            <th>ID</th>
+                            <th>Staff ID</th>
                             <th>Full Name</th>
-                            <th>Monthly Contribution</th>
+                            <th>Department</th>
+                            <th>Role</th>
                             <th>Phone</th>
-                            <th>Join Date</th>
+                            <th>Payment Mode</th>
+                            <th>Monthly Due</th>
                             <th>Status</th>
-                            <th>Total Paid</th>
+                            <th>Balance</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="membersTableBody">
+                        <tr>
+                            <td colspan="10" class="loading-text">Loading members...</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -68,31 +143,264 @@
 
     <!-- Add Member Modal -->
     <div id="addMemberModal" class="modal" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content large-modal">
             <div class="modal-header">
-                <h3>Add New Member</h3>
+                <h3>Register New Assembly Staff Member</h3>
                 <button class="close-btn" onclick="closeAddMemberModal()">&times;</button>
             </div>
             <form id="addMemberForm">
-                <div class="form-group">
-                    <label for="memberName">Full Name *</label>
-                    <input type="text" id="memberName" required placeholder="Enter full name">
+                <div class="form-sections">
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h4>👤 Personal Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberTitle">Title</label>
+                                <select id="memberTitle">
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Miss">Miss</option>
+                                    <option value="Dr.">Dr.</option>
+                                    <option value="Prof.">Prof.</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberFullName">Full Name *</label>
+                                <input type="text" id="memberFullName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberDob">Date of Birth *</label>
+                                <input type="date" id="memberDob" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberAge">Age</label>
+                                <input type="number" id="memberAge" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberMaritalStatus">Marital Status *</label>
+                                <select id="memberMaritalStatus" required>
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="spouseSection" style="display: none;">
+                                <label for="memberSpouseName">Spouse Name</label>
+                                <input type="text" id="memberSpouseName">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Employment Information -->
+                    <div class="form-section">
+                        <h4>💼 Employment Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberStaffId">Staff ID *</label>
+                                <input type="text" id="memberStaffId" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberDepartment">Department *</label>
+                                <select id="memberDepartment" required>
+                                    <option value="">Select Department</option>
+                                    <option value="Administration">Administration</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Health">Health</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Works">Works</option>
+                                    <option value="Planning">Planning</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberRole">Role/Position *</label>
+                                <input type="text" id="memberRole" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberJoinDate">Employment Date *</label>
+                                <input type="date" id="memberJoinDate" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Contact Information -->
+                    <div class="form-section">
+                        <h4>📞 Contact Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberPhone">Phone Number *</label>
+                                <input type="tel" id="memberPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberEmail">Email Address *</label>
+                                <input type="email" id="memberEmail" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="memberAddress">Residential Address *</label>
+                            <textarea id="memberAddress" rows="3" required></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Identification -->
+                    <div class="form-section">
+                        <h4>🆔 Identification Documents</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberIdType">ID Type *</label>
+                                <select id="memberIdType" required>
+                                    <option value="">Select ID Type</option>
+                                    <option value="Voter ID">Voter ID</option>
+                                    <option value="National ID">National ID</option>
+                                    <option value="Passport">Passport</option>
+                                    <option value="Driver License">Driver License</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberIdNumber">ID Number *</label>
+                                <input type="text" id="memberIdNumber" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next of Kin -->
+                    <div class="form-section">
+                        <h4>👨‍👩‍👧‍👦 Next of Kin Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberNokName">Next of Kin Name *</label>
+                                <input type="text" id="memberNokName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberNokRelationship">Relationship *</label>
+                                <input type="text" id="memberNokRelationship" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberNokPhone">Next of Kin Phone *</label>
+                                <input type="tel" id="memberNokPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberNokAddress">Next of Kin Address</label>
+                                <input type="text" id="memberNokAddress">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Parents Information -->
+                    <div class="form-section">
+                        <h4>👴👵 Parents Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberFatherName">Father's Name</label>
+                                <input type="text" id="memberFatherName">
+                            </div>
+                            <div class="form-group">
+                                <label for="memberFatherStatus">Father's Status</label>
+                                <select id="memberFatherStatus">
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberMotherName">Mother's Name</label>
+                                <input type="text" id="memberMotherName">
+                            </div>
+                            <div class="form-group">
+                                <label for="memberMotherStatus">Mother's Status</label>
+                                <select id="memberMotherStatus">
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Children Information -->
+                    <div class="form-section">
+                        <h4>👶 Children Information</h4>
+                        <div id="childrenContainer">
+                            <div class="child-entry">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Child Name</label>
+                                        <input type="text" class="child-name" placeholder="Child full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        <input type="date" class="child-dob">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Action</label>
+                                        <button type="button" class="btn-danger remove-child">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="addChildField()">➕ Add Child</button>
+                    </div>
+
+                    <!-- Payment Settings -->
+                    <div class="form-section">
+                        <h4>💰 Payment Settings</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberPaymentMode">Payment Mode *</label>
+                                <select id="memberPaymentMode" required>
+                                    <option value="">Select Mode</option>
+                                    <option value="cash">Cash Payment</option>
+                                    <option value="controller">Salary Controller</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberMonthlyDue">Monthly Due (GH₵) *</label>
+                                <input type="number" id="memberMonthlyDue" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Creation -->
+                    <div class="form-section">
+                        <h4>🔐 Account Creation</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberUsername">Username *</label>
+                                <input type="text" id="memberUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberPassword">Temporary Password *</label>
+                                <input type="password" id="memberPassword" required>
+                                <small>Member will change this on first login</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consent Agreement -->
+                    <div class="form-section">
+                        <h4>✅ Consent Agreement</h4>
+                        <div class="consent-box">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="memberConsent" required>
+                                <span>I hereby declare that all information provided above is true and accurate to the best of my knowledge. I agree to abide by the rules and regulations of the Sunyani Municipal Assembly Welfare Scheme.</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="memberEmail">Email</label>
-                    <input type="email" id="memberEmail" placeholder="Enter email address">
-                </div>
-                <div class="form-group">
-                    <label for="memberPhone">Phone Number *</label>
-                    <input type="tel" id="memberPhone" required placeholder="Enter phone number">
-                </div>
-                <div class="form-group">
-                    <label for="monthlyContribution">Monthly Contribution (GH₵) *</label>
-                    <input type="number" id="monthlyContribution" min="0" step="0.01" required placeholder="0.00">
-                </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
-                    <button type="submit" class="btn-primary" id="submitMemberBtn">Add Member</button>
+                    <button type="submit" class="btn-primary">💾 Register Member</button>
                 </div>
             </form>
         </div>
