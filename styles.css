@@ -2248,3 +2248,307 @@ form {
         text-align: center;
     }
 }
+/* Withdrawal Management Styles */
+.balance-overview {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.balance-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.balance-card.total-balance {
+    border-left: 4px solid #3498db;
+}
+
+.balance-card.available-balance {
+    border-left: 4px solid #27ae60;
+}
+
+.balance-card.withdrawal-reserve {
+    border-left: 4px solid #f39c12;
+}
+
+.balance-card.total-withdrawals {
+    border-left: 4px solid #e74c3c;
+}
+
+.balance-icon {
+    font-size: 2.5rem;
+    opacity: 0.8;
+}
+
+.balance-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.balance-amount {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.balance-info small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.balance-progress {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 1.5rem;
+}
+
+.progress-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.progress-item label {
+    min-width: 150px;
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+.progress-bar {
+    flex: 1;
+    height: 10px;
+    background: #ecf0f1;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #27ae60, #2ecc71);
+    transition: width 0.3s ease;
+}
+
+.progress-fill.reserve {
+    background: linear-gradient(90deg, #e74c3c, #e67e22);
+}
+
+.progress-text {
+    min-width: 50px;
+    text-align: right;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.balance-refresh {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.last-updated {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Withdrawal Type Badges */
+.withdrawal-type {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.withdrawal-type.savings {
+    background: #e8f4fd;
+    color: #3498db;
+}
+
+.withdrawal-type.emergency {
+    background: #fde8e8;
+    color: #e74c3c;
+}
+
+.withdrawal-type.welfare_payout {
+    background: #e8f5e8;
+    color: #27ae60;
+}
+
+.withdrawal-type.loan_repayment {
+    background: #fef5e8;
+    color: #f39c12;
+}
+
+.withdrawal-type.other {
+    background: #f8f9fa;
+    color: #666;
+}
+
+/* Urgency Badges */
+.urgency-normal {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.urgency-high {
+    background: #fef5e8;
+    color: #f39c12;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.urgency-emergency {
+    background: #fde8e8;
+    color: #e74c3c;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Member Balance Info */
+.member-balance-info {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-top: 1rem;
+    border-left: 4px solid #3498db;
+}
+
+.balance-display {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.balance-display strong {
+    color: #2c3e50;
+    font-size: 1.1rem;
+}
+
+.balance-display small {
+    color: #666;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* Table Header Actions */
+.table-header-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Bulk Withdrawal Styles */
+.bulk-withdrawal-content {
+    padding: 1rem;
+}
+
+.bulk-upload-section {
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed #ddd;
+    border-radius: 10px;
+    margin-bottom: 2rem;
+}
+
+.bulk-upload-section h4 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.bulk-upload-section p {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.bulk-upload-section input[type="file"] {
+    margin-bottom: 1rem;
+}
+
+.bulk-preview-section {
+    margin-top: 2rem;
+}
+
+.bulk-summary {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    border-left: 4px solid #3498db;
+}
+
+/* Withdrawal Review */
+.withdrawal-review {
+    padding: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .balance-overview {
+        grid-template-columns: 1fr;
+    }
+    
+    .balance-progress {
+        grid-template-columns: 1fr;
+    }
+    
+    .progress-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+    }
+    
+    .progress-item label {
+        min-width: auto;
+    }
+    
+    .table-header-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .balance-refresh {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+}
+
+/* Print Styles for Receipts */
+@media print {
+    .app-header,
+    .main-nav,
+    .page-header .header-actions,
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .data-table {
+        width: 100%;
+        font-size: 12px;
+    }
+}
