@@ -1,12 +1,13 @@
 // Firebase configuration and database operations
 const firebaseConfig = {
-    apiKey: "your-api-key",
-    authDomain: "your-auth-domain",
-    databaseURL: "your-database-url",
-    projectId: "your-project-id",
-    storageBucket: "your-storage-bucket",
-    messagingSenderId: "your-messaging-sender-id",
-    appId: "your-app-id"
+    apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
+    authDomain: "sunyani-municipal-welfare.firebaseapp.com",
+    databaseURL: "https://sunyani-municipal-welfare-default-rtdb.firebaseio.com",
+    projectId: "sunyani-municipal-welfare",
+    storageBucket: "sunyani-municipal-welfare.firebasestorage.app",
+    messagingSenderId: "690980483755",
+    appId: "1:690980483755:web:ce9bc7dcea698bd6d7fdee",
+    measurementId: "G-KRG057K0VW"
 };
 
 // Initialize Firebase
