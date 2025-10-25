@@ -3,112 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SUNYANI MUNICIPAL WELFARE</title>
+    <title>Admin Dashboard - Sunyani Municipal Assembly</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System - Admin Dashboard</p>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
-                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                    <div class="notification-bell" onclick="showNotifications()">🔔 <span id="notificationCount">0</span></div>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
 
-        <!-- Navigation -->
         <nav class="main-nav">
             <a href="dashboard.html" class="nav-link active">🏠 Dashboard</a>
             <a href="members.html" class="nav-link">👥 Members</a>
             <a href="contributions.html" class="nav-link">💰 Contributions</a>
             <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link">🛡️ Welfare Management</a>
             <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link">⚙️ Admin Settings</a>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
-                <h2>Dashboard Overview</h2>
-                <p id="lastUpdate">Welcome to the Sunyani Municipal Welfare Management System</p>
+                <h2>Administrative Dashboard</h2>
+                <p id="lastUpdate">Real-time overview of welfare system performance</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="sendMonthlyReminders()">📢 Send Due Reminders</button>
+                    <button class="btn-secondary" onclick="runMonthlyDues()">🔄 Run Monthly Dues</button>
+                </div>
             </div>
 
-            <!-- Statistics Cards -->
+            <!-- Key Metrics -->
             <div class="stats-grid">
                 <div class="stat-card">
                     <div class="stat-icon">👥</div>
                     <div class="stat-info">
                         <h3>Total Members</h3>
                         <p class="stat-number" id="totalMembers">0</p>
+                        <small id="activeMembersText">0 Active</small>
                     </div>
                 </div>
-
                 <div class="stat-card">
                     <div class="stat-icon">💰</div>
                     <div class="stat-info">
                         <h3>Total Contributions</h3>
                         <p class="stat-number" id="totalContributions">GH₵ 0.00</p>
+                        <small id="monthlyCollection">This Month: GH₵ 0.00</small>
                     </div>
                 </div>
-
                 <div class="stat-card">
-                    <div class="stat-icon">🏦</div>
+                    <div class="stat-icon">🏧</div>
                     <div class="stat-info">
                         <h3>Available Balance</h3>
                         <p class="stat-number" id="availableBalance">GH₵ 0.00</p>
+                        <small id="withdrawalReserve">Reserve: GH₵ 0.00</small>
                     </div>
                 </div>
-
                 <div class="stat-card">
-                    <div class="stat-icon">📅</div>
+                    <div class="stat-icon">⏰</div>
                     <div class="stat-info">
-                        <h3>This Month's Collection</h3>
-                        <p class="stat-number" id="monthlyCollection">GH₵ 0.00</p>
+                        <h3>Pending Actions</h3>
+                        <p class="stat-number" id="pendingActions">0</p>
+                        <small id="pendingBreakdown">Welfare: 0, Withdrawals: 0</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Tracking -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>📅 Monthly Payment Tracking</h3>
+                    <div class="section-actions">
+                        <select id="monthFilter" onchange="updatePaymentTracking()">
+                            <option value="current">Current Month</option>
+                            <option value="last">Last Month</option>
+                            <option value="custom">Custom Range</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="payment-overview">
+                    <div class="payment-stats">
+                        <div class="payment-stat paid">
+                            <span class="stat-label">Paid Members</span>
+                            <span class="stat-number" id="paidMembers">0</span>
+                            <span class="stat-percentage" id="paidPercentage">0%</span>
+                        </div>
+                        <div class="payment-stat pending">
+                            <span class="stat-label">Pending Payment</span>
+                            <span class="stat-number" id="pendingMembers">0</span>
+                            <span class="stat-percentage" id="pendingPercentage">0%</span>
+                        </div>
+                        <div class="payment-stat overdue">
+                            <span class="stat-label">Overdue</span>
+                            <span class="stat-number" id="overdueMembers">0</span>
+                            <span class="stat-percentage" id="overduePercentage">0%</span>
+                        </div>
+                    </div>
+                    <div class="payment-chart">
+                        <canvas id="paymentChart" width="400" height="200"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3>Quick Actions</h3>
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="location.href='members.html?action=add'">
-                        ➕ Add New Member
-                    </button>
-                    <button class="action-btn" onclick="location.href='contributions.html?action=record'">
-                        💳 Record Payment
-                    </button>
-                    <button class="action-btn" onclick="location.href='withdrawals.html?action=new'">
-                        🏧 New Withdrawal
-                    </button>
+            <div class="dashboard-section">
+                <h3>🚀 Quick Actions</h3>
+                <div class="quick-actions-grid">
+                    <div class="action-card" onclick="location.href='members.html'">
+                        <div class="action-icon">👥</div>
+                        <h4>Manage Members</h4>
+                        <p>Add, edit, or view member details</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='contributions.html'">
+                        <div class="action-icon">💰</div>
+                        <h4>Record Payments</h4>
+                        <p>Process cash payments and verify transactions</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='welfare-management.html'">
+                        <div class="action-icon">🛡️</div>
+                        <h4>Welfare Requests</h4>
+                        <p>Review and approve welfare applications</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='withdrawals.html'">
+                        <div class="action-icon">🏧</div>
+                        <h4>Withdrawal Management</h4>
+                        <p>Process member withdrawal requests</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='reports.html'">
+                        <div class="action-icon">📊</div>
+                        <h4>Generate Reports</h4>
+                        <p>Create financial and member reports</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='admin-settings.html'">
+                        <div class="action-icon">⚙️</div>
+                        <h4>System Settings</h4>
+                        <p>Configure system parameters and admin accounts</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Recent Activity & Reminders -->
+            <!-- Recent Activity -->
             <div class="dashboard-sections">
                 <div class="section">
-                    <h3>📋 Payment Reminders</h3>
-                    <div class="reminders-list" id="remindersList">
-                        <div class="reminder-item">
-                            <span class="member-name">Loading reminders...</span>
+                    <h3>📋 Recent Welfare Requests</h3>
+                    <div class="activities-list" id="recentWelfareRequests">
+                        <div class="activity-item">
+                            <span class="activity-text">Loading recent activities...</span>
                         </div>
                     </div>
+                    <button class="btn-secondary" onclick="location.href='welfare-management.html'">View All Requests</button>
                 </div>
 
                 <div class="section">
-                    <h3>🕒 Recent Activities</h3>
-                    <div class="activities-list" id="activitiesList">
+                    <h3>💳 Recent Payments</h3>
+                    <div class="activities-list" id="recentPayments">
                         <div class="activity-item">
-                            <span class="activity-text">Loading activities...</span>
+                            <span class="activity-text">Loading payment history...</span>
                         </div>
                     </div>
+                    <button class="btn-secondary" onclick="location.href='contributions.html'">View All Payments</button>
                 </div>
             </div>
+
+            <!-- System Alerts -->
+            <div class="alerts-section" id="systemAlerts" style="display: none;">
+                <h3>⚠️ System Alerts</h3>
+                <div class="alerts-list" id="alertsList"></div>
+            </div>
         </main>
+    </div>
+
+    <!-- Notifications Panel -->
+    <div id="notificationsPanel" class="notifications-panel" style="display: none;">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" onclick="hideNotifications()">&times;</button>
+        </div>
+        <div class="notifications-list" id="notificationsList">
+            <div class="notification-item">
+                <span class="notification-text">No new notifications</span>
+            </div>
+        </div>
     </div>
 
     <script src="js/firebase-config.js"></script>
