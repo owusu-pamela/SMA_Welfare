@@ -2792,3 +2792,349 @@ form {
         min-height: 100vh;
     }
 }
+/* Admin Settings Styles */
+.admin-stats {
+    display: flex;
+    gap: 1rem;
+}
+
+.stat-badge {
+    background: #f8f9fa;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.stat-badge strong {
+    color: #2c3e50;
+}
+
+.admin-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.you-badge {
+    background: #3498db;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.current-user {
+    background: #f0f8ff !important;
+}
+
+/* Role Cards */
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.role-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid;
+}
+
+.role-card.super-admin {
+    border-left-color: #e74c3c;
+}
+
+.role-card.admin {
+    border-left-color: #3498db;
+}
+
+.role-card.manager {
+    border-left-color: #f39c12;
+}
+
+.role-card.viewer {
+    border-left-color: #27ae60;
+}
+
+.role-card.custom {
+    border-left-color: #9b59b6;
+}
+
+.role-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.role-header h4 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.role-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    background: #f8f9fa;
+    color: #666;
+}
+
+.role-description {
+    margin-bottom: 1rem;
+}
+
+.role-description p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.role-permissions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.permission-tag {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: bold;
+}
+
+.role-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Permissions Grid */
+.permissions-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.permissions-grid .checkbox-label {
+    margin-bottom: 0;
+}
+
+/* Role Badges */
+.role-super_admin {
+    background: #fde8e8;
+    color: #e74c3c;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-admin {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-manager {
+    background: #fef5e8;
+    color: #f39c12;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-viewer {
+    background: #e8f5e8;
+    color: #27ae60;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.role-custom {
+    background: #f3e8fd;
+    color: #9b59b6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* System Health */
+.health-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.health-card {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.health-icon {
+    font-size: 2rem;
+    opacity: 0.8;
+}
+
+.health-info h4 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.health-value {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.health-info small {
+    color: #666;
+    font-size: 0.8rem;
+}
+
+/* Security Actions */
+.security-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #ecf0f1;
+}
+
+.security-actions h4 {
+    margin-bottom: 1rem;
+    color: #2c3e50;
+}
+
+.security-actions .action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Backup Options */
+.backup-options {
+    padding: 1rem;
+}
+
+.option-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.option-card {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 2px solid transparent;
+}
+
+.option-card:hover {
+    background: white;
+    border-color: #1e3c72;
+    transform: translateY(-2px);
+}
+
+.option-icon {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+}
+
+.option-card h5 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+}
+
+.option-card p {
+    margin: 0;
+    color: #666;
+    font-size: 0.8rem;
+}
+
+.backup-settings {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+/* Backup Type Badges */
+.backup-type-full {
+    background: #e8f4fd;
+    color: #3498db;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.backup-type-partial {
+    background: #fef5e8;
+    color: #f39c12;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+/* Permissions Preview */
+.permissions-preview {
+    font-size: 0.8rem;
+    color: #666;
+    max-width: 150px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .admin-stats {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .roles-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .health-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .option-cards {
+        grid-template-columns: 1fr;
+    }
+    
+    .permissions-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .security-actions .action-buttons {
+        flex-direction: column;
+    }
+}
