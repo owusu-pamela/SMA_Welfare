@@ -3,17 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Withdrawals - SUNYANI MUNICIPAL WELFARE</title>
+    <title>Withdrawal Management - Sunyani Municipal Assembly</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System</p>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
                     <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
@@ -22,67 +28,306 @@
             </div>
         </header>
 
-        <!-- Navigation -->
         <nav class="main-nav">
             <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
             <a href="members.html" class="nav-link">👥 Members</a>
             <a href="contributions.html" class="nav-link">💰 Contributions</a>
             <a href="withdrawals.html" class="nav-link active">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link">🛡️ Welfare Management</a>
             <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link">⚙️ Admin Settings</a>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
                 <h2>Withdrawal Management</h2>
-                <p>Manage fund withdrawals and track expenditure</p>
+                <p>Manage member withdrawals and system financial balance</p>
                 <div class="header-actions">
-                    <div class="balance-info">
-                        💰 Available Balance: <strong id="availableBalanceWithdraw">GH₵ 0.00</strong>
+                    <button class="btn-primary" onclick="showNewWithdrawalModal()">💳 New Withdrawal</button>
+                    <button class="btn-secondary" onclick="generateWithdrawalReport()">📄 Export Report</button>
+                </div>
+            </div>
+
+            <!-- System Balance Overview -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>💰 System Financial Overview</h3>
+                    <div class="balance-refresh">
+                        <button class="btn-secondary" onclick="refreshBalance()">🔄 Refresh</button>
+                        <span class="last-updated" id="balanceLastUpdated">Last updated: Just now</span>
                     </div>
-                    <button class="btn-primary" onclick="showNewWithdrawalModal()">🏧 New Withdrawal</button>
+                </div>
+                <div class="balance-overview">
+                    <div class="balance-card total-balance">
+                        <div class="balance-icon">💰</div>
+                        <div class="balance-info">
+                            <h4>Total Contributions</h4>
+                            <p class="balance-amount" id="totalContributions">GH₵ 0.00</p>
+                            <small>All-time collected contributions</small>
+                        </div>
+                    </div>
+                    <div class="balance-card available-balance">
+                        <div class="balance-icon">🏦</div>
+                        <div class="balance-info">
+                            <h4>Available Balance</h4>
+                            <p class="balance-amount" id="availableBalance">GH₵ 0.00</p>
+                            <small>Current system balance</small>
+                        </div>
+                    </div>
+                    <div class="balance-card withdrawal-reserve">
+                        <div class="balance-icon">🛡️</div>
+                        <div class="balance-info">
+                            <h4>Withdrawal Reserve</h4>
+                            <p class="balance-amount" id="withdrawalReserve">GH₵ 0.00</p>
+                            <small>50% of total contributions</small>
+                        </div>
+                    </div>
+                    <div class="balance-card total-withdrawals">
+                        <div class="balance-icon">🏧</div>
+                        <div class="balance-info">
+                            <h4>Total Withdrawals</h4>
+                            <p class="balance-amount" id="totalWithdrawals">GH₵ 0.00</p>
+                            <small>All-time processed withdrawals</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Balance Progress Bars -->
+                <div class="balance-progress">
+                    <div class="progress-item">
+                        <label>Withdrawal Capacity</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="withdrawalCapacityBar" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="withdrawalCapacityText">0%</span>
+                    </div>
+                    <div class="progress-item">
+                        <label>Reserve Utilization</label>
+                        <div class="progress-bar">
+                            <div class="progress-fill reserve" id="reserveUtilizationBar" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text" id="reserveUtilizationText">0%</span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Loading State -->
-            <div id="loadingState" class="loading-text">
-                Loading withdrawals...
+            <!-- Quick Withdrawal Actions -->
+            <div class="dashboard-section">
+                <h3>⚡ Quick Withdrawal Actions</h3>
+                <div class="quick-actions-grid">
+                    <div class="action-card" onclick="showNewWithdrawalModal()">
+                        <div class="action-icon">💳</div>
+                        <h4>Process Withdrawal</h4>
+                        <p>Create new withdrawal for a member</p>
+                    </div>
+                    <div class="action-card" onclick="showBulkWithdrawalModal()">
+                        <div class="action-icon">📦</div>
+                        <h4>Bulk Withdrawals</h4>
+                        <p>Process multiple withdrawals at once</p>
+                    </div>
+                    <div class="action-card" onclick="showEmergencyWithdrawalModal()">
+                        <div class="action-icon">🚨</div>
+                        <h4>Emergency Withdrawal</h4>
+                        <p>Fast-track urgent withdrawal requests</p>
+                    </div>
+                    <div class="action-card" onclick="location.href='reports.html?type=withdrawals'">
+                        <div class="action-icon">📊</div>
+                        <h4>Withdrawal Analytics</h4>
+                        <p>View detailed withdrawal reports</p>
+                    </div>
+                </div>
             </div>
 
-            <!-- Withdrawals Table -->
-            <div class="table-container" id="tableContainer" style="display: none;">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>Date</th>
-                            <th>Withdrawal ID</th>
-                            <th>Amount</th>
-                            <th>Purpose</th>
-                            <th>Beneficiary</th>
-                            <th>Payment Method</th>
-                            <th>Processed By</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="withdrawalsTableBody">
-                    </tbody>
-                </table>
+            <!-- Withdrawal Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <h3>Pending Withdrawals</h3>
+                        <p class="stat-number" id="pendingWithdrawals">0</p>
+                        <small id="pendingAmount">GH₵ 0.00</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3>Approved Today</h3>
+                        <p class="stat-number" id="approvedToday">0</p>
+                        <small id="approvedAmountToday">GH₵ 0.00</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <h3>This Month</h3>
+                        <p class="stat-number" id="monthlyWithdrawals">0</p>
+                        <small id="monthlyAmount">GH₵ 0.00</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🎯</div>
+                    <div class="stat-info">
+                        <h3>Average Withdrawal</h3>
+                        <p class="stat-number" id="averageWithdrawal">GH₵ 0.00</p>
+                        <small>Per transaction</small>
+                    </div>
+                </div>
             </div>
 
-            <!-- Summary Cards -->
-            <div class="summary-cards">
-                <div class="summary-card">
-                    <h4>Total Withdrawals</h4>
-                    <p id="totalWithdrawals">GH₵ 0.00</p>
+            <!-- Withdrawal Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-button active" onclick="openWithdrawalTab('pending-tab')">⏰ Pending</button>
+                    <button class="tab-button" onclick="openWithdrawalTab('approved-tab')">✅ Approved</button>
+                    <button class="tab-button" onclick="openWithdrawalTab('rejected-tab')">❌ Rejected</button>
+                    <button class="tab-button" onclick="openWithdrawalTab('completed-tab')">🏁 Completed</button>
+                    <button class="tab-button" onclick="openWithdrawalTab('all-tab')">📋 All Withdrawals</button>
                 </div>
-                <div class="summary-card">
-                    <h4>This Month</h4>
-                    <p id="monthWithdrawals">GH₵ 0.00</p>
+
+                <div id="pending-tab" class="tab-content active">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Requested</th>
+                                    <th>Purpose</th>
+                                    <th>Urgency</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingWithdrawalsTable">
+                                <tr><td colspan="8">Loading pending withdrawals...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="summary-card">
-                    <h4>This Year</h4>
-                    <p id="yearWithdrawals">GH₵ 0.00</p>
+
+                <div id="approved-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Approved Date</th>
+                                    <th>Approved By</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvedWithdrawalsTable">
+                                <tr><td colspan="8">No approved withdrawals</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="rejected-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Rejected Date</th>
+                                    <th>Reason</th>
+                                    <th>Rejected By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rejectedWithdrawalsTable">
+                                <tr><td colspan="8">No rejected withdrawals</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="completed-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Completed Date</th>
+                                    <th>Method</th>
+                                    <th>Processed By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completedWithdrawalsTable">
+                                <tr><td colspan="8">No completed withdrawals</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="all-tab" class="tab-content">
+                    <div class="table-header-actions">
+                        <div class="filter-group">
+                            <label for="dateFilter">Date Range:</label>
+                            <select id="dateFilter" onchange="filterWithdrawals()">
+                                <option value="all">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                                <option value="quarter">This Quarter</option>
+                                <option value="year">This Year</option>
+                            </select>
+                        </div>
+                        <div class="filter-group">
+                            <label for="typeFilter">Type:</label>
+                            <select id="typeFilter" onchange="filterWithdrawals()">
+                                <option value="all">All Types</option>
+                                <option value="savings">Savings Withdrawal</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="welfare_payout">Welfare Payout</option>
+                                <option value="loan_repayment">Loan Repayment</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <button class="btn-secondary" onclick="clearWithdrawalFilters()">🔄 Clear Filters</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Purpose</th>
+                                    <th>Method</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="allWithdrawalsTable">
+                                <tr><td colspan="9">Loading all withdrawals...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Withdrawal Activity -->
+            <div class="dashboard-section">
+                <h3>📋 Recent Withdrawal Activity</h3>
+                <div class="activities-list" id="recentWithdrawals">
+                    <div class="activity-item">
+                        <span class="activity-text">Loading recent activity...</span>
+                    </div>
                 </div>
             </div>
         </main>
@@ -90,64 +335,165 @@
 
     <!-- New Withdrawal Modal -->
     <div id="newWithdrawalModal" class="modal" style="display: none;">
-        <div class="modal-content">
+        <div class="modal-content large-modal">
             <div class="modal-header">
-                <h3>New Withdrawal Request</h3>
+                <h3>Process New Withdrawal</h3>
                 <button class="close-btn" onclick="closeNewWithdrawalModal()">&times;</button>
             </div>
             <form id="newWithdrawalForm">
-                <div class="form-group">
-                    <label for="withdrawalAmount">Amount (GH₵) *</label>
-                    <input type="number" id="withdrawalAmount" min="0" step="0.01" required placeholder="0.00">
-                    <small>Available Balance: <span id="availableBalanceDisplay" class="balance-amount">GH₵ 0.00</span></small>
-                    <small id="balanceWarning" class="warning" style="display: none; color: #e74c3c;">⚠️ Insufficient funds!</small>
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalPurpose">Purpose/Reason *</label>
-                    <select id="withdrawalPurpose" required>
-                        <option value="">Select Purpose</option>
-                        <option value="Member Welfare">Member Welfare</option>
-                        <option value="Emergency Support">Emergency Support</option>
-                        <option value="Administrative Costs">Administrative Costs</option>
-                        <option value="Event Funding">Event Funding</option>
-                        <option value="Loan Disbursement">Loan Disbursement</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalBeneficiary">Beneficiary *</label>
-                    <input type="text" id="withdrawalBeneficiary" required placeholder="Name of person/organization receiving funds">
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalMethod">Payment Method *</label>
-                    <select id="withdrawalMethod" required>
-                        <option value="">Select Method</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Cheque">Cheque</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Mobile Money">Mobile Money</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="withdrawalNotes">Additional Notes</label>
-                    <textarea id="withdrawalNotes" rows="3" placeholder="Any additional information about this withdrawal..."></textarea>
-                </div>
-                <div class="withdrawal-summary">
-                    <h4>Withdrawal Summary</h4>
-                    <div class="summary-item">
-                        <span>Amount:</span>
-                        <span id="summaryAmount">GH₵ 0.00</span>
+                <div class="form-sections">
+                    <!-- Member Selection -->
+                    <div class="form-section">
+                        <h4>👤 Select Member</h4>
+                        <div class="form-group">
+                            <label for="withdrawalMember">Member *</label>
+                            <select id="withdrawalMember" required onchange="loadMemberBalance()">
+                                <option value="">Select Member</option>
+                            </select>
+                        </div>
+                        <div class="member-balance-info" id="memberBalanceInfo" style="display: none;">
+                            <div class="balance-display">
+                                <strong>Available Balance: <span id="memberAvailableBalance">GH₵ 0.00</span></strong>
+                                <small>Total Contributions: <span id="memberTotalContributions">GH₵ 0.00</span></small>
+                                <small>Previous Withdrawals: <span id="memberPreviousWithdrawals">GH₵ 0.00</span></small>
+                            </div>
+                        </div>
                     </div>
-                    <div class="summary-item">
-                        <span>Remaining Balance:</span>
-                        <span id="summaryRemaining">GH₵ 0.00</span>
+
+                    <!-- Withdrawal Details -->
+                    <div class="form-section">
+                        <h4>💰 Withdrawal Details</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="withdrawalAmount">Amount (GH₵) *</label>
+                                <input type="number" id="withdrawalAmount" required min="0" step="0.01" onchange="validateWithdrawalAmount()">
+                                <small>Maximum allowable: <span id="maxWithdrawalAmount">GH₵ 0.00</span></small>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdrawalType">Withdrawal Type *</label>
+                                <select id="withdrawalType" required>
+                                    <option value="">Select Type</option>
+                                    <option value="savings">Savings Withdrawal</option>
+                                    <option value="emergency">Emergency Withdrawal</option>
+                                    <option value="welfare_payout">Welfare Service Payout</option>
+                                    <option value="loan_repayment">Loan Repayment</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalPurpose">Purpose *</label>
+                            <textarea id="withdrawalPurpose" required rows="3" placeholder="Describe the purpose of this withdrawal"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="form-section">
+                        <h4>💳 Payment Method</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="withdrawalMethod">Payment Method *</label>
+                                <select id="withdrawalMethod" required>
+                                    <option value="">Select Method</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                    <option value="mobile_money">Mobile Money</option>
+                                    <option value="cheque">Cheque</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="withdrawalUrgency">Urgency Level</label>
+                                <select id="withdrawalUrgency">
+                                    <option value="normal">Normal</option>
+                                    <option value="high">High</option>
+                                    <option value="emergency">Emergency</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group" id="bankDetailsSection" style="display: none;">
+                            <label for="bankDetails">Bank Account Details</label>
+                            <textarea id="bankDetails" rows="2" placeholder="Bank name, account number, branch"></textarea>
+                        </div>
+                        <div class="form-group" id="mobileMoneySection" style="display: none;">
+                            <label for="mobileMoneyNumber">Mobile Money Number</label>
+                            <input type="text" id="mobileMoneyNumber" placeholder="e.g., 0551234567">
+                        </div>
+                    </div>
+
+                    <!-- Supporting Documents -->
+                    <div class="form-section">
+                        <h4>📎 Supporting Information</h4>
+                        <div class="form-group">
+                            <label for="withdrawalNotes">Administrative Notes</label>
+                            <textarea id="withdrawalNotes" rows="3" placeholder="Any additional notes or comments"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="requiresApproval" checked>
+                                <span>Requires additional approval</span>
+                            </label>
+                        </div>
                     </div>
                 </div>
+
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closeNewWithdrawalModal()">Cancel</button>
-                    <button type="submit" class="btn-primary" id="submitWithdrawalBtn">🏧 Process Withdrawal</button>
+                    <button type="submit" class="btn-primary">💳 Process Withdrawal</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Withdrawal Review Modal -->
+    <div id="reviewWithdrawalModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Review Withdrawal Request</h3>
+                <button class="close-btn" onclick="closeReviewWithdrawalModal()">&times;</button>
+            </div>
+            <div id="reviewWithdrawalContent">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Withdrawal Modal -->
+    <div id="bulkWithdrawalModal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Process Bulk Withdrawals</h3>
+                <button class="close-btn" onclick="closeBulkWithdrawalModal()">&times;</button>
+            </div>
+            <div class="bulk-withdrawal-content">
+                <div class="bulk-upload-section">
+                    <h4>📁 Upload Bulk Withdrawal File</h4>
+                    <p>Upload a CSV file with withdrawal details. Format: MemberID, Amount, Purpose, Type</p>
+                    <input type="file" id="bulkWithdrawalFile" accept=".csv" onchange="handleBulkFileUpload()">
+                    <button class="btn-secondary" onclick="downloadBulkTemplate()">📥 Download Template</button>
+                </div>
+                <div class="bulk-preview-section" id="bulkPreviewSection" style="display: none;">
+                    <h4>👁️ Preview Bulk Withdrawals</h4>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Member</th>
+                                    <th>Amount</th>
+                                    <th>Purpose</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="bulkWithdrawalsPreview">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bulk-summary" id="bulkSummary">
+                        <!-- Summary will be populated here -->
+                    </div>
+                    <button class="btn-primary" onclick="processBulkWithdrawals()">💳 Process All Withdrawals</button>
+                </div>
+            </div>
         </div>
     </div>
 
