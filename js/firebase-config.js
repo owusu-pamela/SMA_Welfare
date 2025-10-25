@@ -1,34 +1,44 @@
-// Firebase configuration and database operations
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+import { 
+    getDatabase, 
+    ref, 
+    set, 
+    get, 
+    update, 
+    onValue, 
+    query, 
+    orderByChild, 
+    equalTo,
+    push,
+    child 
+} from "firebase/database";
+
+// Your web app's Firebase configuration
 const firebaseConfig = {
-    apiKey: "AIzaSyC4-RGc-pXQZ2oZc3w8q9W2b6d7s8t9u0v",
-    authDomain: "sunyani-welfare.firebaseapp.com",
-    databaseURL: "https://sunyani-welfare-default-rtdb.firebaseio.com",
-    projectId: "sunyani-welfare",
-    storageBucket: "sunyani-welfare.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdef123456789"
+  apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
+  authDomain: "sunyani-municipal-welfare.firebaseapp.com",
+  databaseURL: "https://sunyani-municipal-welfare-default-rtdb.firebaseio.com",
+  projectId: "sunyani-municipal-welfare",
+  storageBucket: "sunyani-municipal-welfare.firebasestorage.app",
+  messagingSenderId: "690980483755",
+  appId: "1:690980483755:web:ce9bc7dcea698bd6d7fdee",
+  measurementId: "G-KRG057K0VW"
 };
 
 // Initialize Firebase
-try {
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    console.log('Firebase initialized successfully');
-} catch (error) {
-    console.error('Firebase initialization error:', error);
-}
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+const database = getDatabase(app);
 
-// Database reference
-const database = firebase.database();
-
-// Welfare Database Operations
+// Welfare Database Operations (Modular SDK v9+)
 const WelfareDB = {
     // Test database connection
     async testConnection() {
         try {
-            const testRef = database.ref('test_connection');
-            await testRef.set({
+            const testRef = ref(database, 'test_connection');
+            await set(testRef, {
                 timestamp: new Date().toISOString(),
                 status: 'connected'
             });
@@ -43,7 +53,8 @@ const WelfareDB = {
     // Member operations
     async getMembers() {
         try {
-            const snapshot = await database.ref('members').once('value');
+            const membersRef = ref(database, 'members');
+            const snapshot = await get(membersRef);
             const members = snapshot.val() || {};
             console.log('Loaded members:', Object.keys(members).length);
             return members;
@@ -55,7 +66,8 @@ const WelfareDB = {
 
     async getMember(memberId) {
         try {
-            const snapshot = await database.ref('members/' + memberId).once('value');
+            const memberRef = ref(database, 'members/' + memberId);
+            const snapshot = await get(memberRef);
             return snapshot.val();
         } catch (error) {
             console.error('Error loading member:', error);
@@ -66,7 +78,8 @@ const WelfareDB = {
     async addMember(memberData) {
         try {
             const memberId = memberData.id || 'member_' + Date.now();
-            await database.ref('members/' + memberId).set(memberData);
+            const memberRef = ref(database, 'members/' + memberId);
+            await set(memberRef, memberData);
             console.log('Member added:', memberId);
             return memberId;
         } catch (error) {
@@ -77,7 +90,8 @@ const WelfareDB = {
 
     async updateMember(memberId, updateData) {
         try {
-            await database.ref('members/' + memberId).update(updateData);
+            const memberRef = ref(database, 'members/' + memberId);
+            await update(memberRef, updateData);
             console.log('Member updated:', memberId);
         } catch (error) {
             console.error('Error updating member:', error);
@@ -86,7 +100,8 @@ const WelfareDB = {
     },
 
     onMembersChange(callback) {
-        database.ref('members').on('value', (snapshot) => {
+        const membersRef = ref(database, 'members');
+        onValue(membersRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -94,7 +109,8 @@ const WelfareDB = {
     // Contribution operations
     async getContributions() {
         try {
-            const snapshot = await database.ref('contributions').once('value');
+            const contributionsRef = ref(database, 'contributions');
+            const snapshot = await get(contributionsRef);
             const contributions = snapshot.val() || {};
             console.log('Loaded contributions:', Object.keys(contributions).length);
             return contributions;
@@ -106,7 +122,9 @@ const WelfareDB = {
 
     async getMemberContributions(memberId) {
         try {
-            const snapshot = await database.ref('contributions').orderByChild('memberId').equalTo(memberId).once('value');
+            const contributionsRef = ref(database, 'contributions');
+            const memberContributionsQuery = query(contributionsRef, orderByChild('memberId'), equalTo(memberId));
+            const snapshot = await get(memberContributionsQuery);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading member contributions:', error);
@@ -117,7 +135,8 @@ const WelfareDB = {
     async addContribution(contributionData) {
         try {
             const contributionId = 'contribution_' + Date.now();
-            await database.ref('contributions/' + contributionId).set(contributionData);
+            const contributionRef = ref(database, 'contributions/' + contributionId);
+            await set(contributionRef, contributionData);
             console.log('Contribution added:', contributionId);
             return contributionId;
         } catch (error) {
@@ -127,13 +146,16 @@ const WelfareDB = {
     },
 
     onContributionsChange(callback) {
-        database.ref('contributions').on('value', (snapshot) => {
+        const contributionsRef = ref(database, 'contributions');
+        onValue(contributionsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
 
     onMemberContributionsChange(memberId, callback) {
-        database.ref('contributions').orderByChild('memberId').equalTo(memberId).on('value', (snapshot) => {
+        const contributionsRef = ref(database, 'contributions');
+        const memberContributionsQuery = query(contributionsRef, orderByChild('memberId'), equalTo(memberId));
+        onValue(memberContributionsQuery, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -141,7 +163,8 @@ const WelfareDB = {
     // Withdrawal operations
     async getWithdrawals() {
         try {
-            const snapshot = await database.ref('withdrawals').once('value');
+            const withdrawalsRef = ref(database, 'withdrawals');
+            const snapshot = await get(withdrawalsRef);
             const withdrawals = snapshot.val() || {};
             console.log('Loaded withdrawals:', Object.keys(withdrawals).length);
             return withdrawals;
@@ -153,7 +176,9 @@ const WelfareDB = {
 
     async getMemberWithdrawals(memberId) {
         try {
-            const snapshot = await database.ref('withdrawals').orderByChild('memberId').equalTo(memberId).once('value');
+            const withdrawalsRef = ref(database, 'withdrawals');
+            const memberWithdrawalsQuery = query(withdrawalsRef, orderByChild('memberId'), equalTo(memberId));
+            const snapshot = await get(memberWithdrawalsQuery);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading member withdrawals:', error);
@@ -164,7 +189,8 @@ const WelfareDB = {
     async addWithdrawal(withdrawalData) {
         try {
             const withdrawalId = 'withdrawal_' + Date.now();
-            await database.ref('withdrawals/' + withdrawalId).set(withdrawalData);
+            const withdrawalRef = ref(database, 'withdrawals/' + withdrawalId);
+            await set(withdrawalRef, withdrawalData);
             console.log('Withdrawal added:', withdrawalId);
             return withdrawalId;
         } catch (error) {
@@ -175,7 +201,8 @@ const WelfareDB = {
 
     async updateWithdrawal(withdrawalId, updateData) {
         try {
-            await database.ref('withdrawals/' + withdrawalId).update(updateData);
+            const withdrawalRef = ref(database, 'withdrawals/' + withdrawalId);
+            await update(withdrawalRef, updateData);
             console.log('Withdrawal updated:', withdrawalId);
         } catch (error) {
             console.error('Error updating withdrawal:', error);
@@ -184,13 +211,16 @@ const WelfareDB = {
     },
 
     onWithdrawalsChange(callback) {
-        database.ref('withdrawals').on('value', (snapshot) => {
+        const withdrawalsRef = ref(database, 'withdrawals');
+        onValue(withdrawalsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
 
     onMemberWithdrawalsChange(memberId, callback) {
-        database.ref('withdrawals').orderByChild('memberId').equalTo(memberId).on('value', (snapshot) => {
+        const withdrawalsRef = ref(database, 'withdrawals');
+        const memberWithdrawalsQuery = query(withdrawalsRef, orderByChild('memberId'), equalTo(memberId));
+        onValue(memberWithdrawalsQuery, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -198,7 +228,8 @@ const WelfareDB = {
     // Welfare application operations
     async getWelfareApplications() {
         try {
-            const snapshot = await database.ref('welfare_applications').once('value');
+            const applicationsRef = ref(database, 'welfare_applications');
+            const snapshot = await get(applicationsRef);
             const applications = snapshot.val() || {};
             console.log('Loaded welfare applications:', Object.keys(applications).length);
             return applications;
@@ -210,7 +241,9 @@ const WelfareDB = {
 
     async getMemberWelfareApplications(memberId) {
         try {
-            const snapshot = await database.ref('welfare_applications').orderByChild('memberId').equalTo(memberId).once('value');
+            const applicationsRef = ref(database, 'welfare_applications');
+            const memberApplicationsQuery = query(applicationsRef, orderByChild('memberId'), equalTo(memberId));
+            const snapshot = await get(memberApplicationsQuery);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading member welfare applications:', error);
@@ -221,7 +254,8 @@ const WelfareDB = {
     async addWelfareApplication(applicationData) {
         try {
             const applicationId = 'welfare_' + Date.now();
-            await database.ref('welfare_applications/' + applicationId).set(applicationData);
+            const applicationRef = ref(database, 'welfare_applications/' + applicationId);
+            await set(applicationRef, applicationData);
             console.log('Welfare application added:', applicationId);
             return applicationId;
         } catch (error) {
@@ -232,7 +266,8 @@ const WelfareDB = {
 
     async updateWelfareApplication(applicationId, updateData) {
         try {
-            await database.ref('welfare_applications/' + applicationId).update(updateData);
+            const applicationRef = ref(database, 'welfare_applications/' + applicationId);
+            await update(applicationRef, updateData);
             console.log('Welfare application updated:', applicationId);
         } catch (error) {
             console.error('Error updating welfare application:', error);
@@ -241,13 +276,16 @@ const WelfareDB = {
     },
 
     onWelfareApplicationsChange(callback) {
-        database.ref('welfare_applications').on('value', (snapshot) => {
+        const applicationsRef = ref(database, 'welfare_applications');
+        onValue(applicationsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
 
     onMemberWelfareApplicationsChange(memberId, callback) {
-        database.ref('welfare_applications').orderByChild('memberId').equalTo(memberId).on('value', (snapshot) => {
+        const applicationsRef = ref(database, 'welfare_applications');
+        const memberApplicationsQuery = query(applicationsRef, orderByChild('memberId'), equalTo(memberId));
+        onValue(memberApplicationsQuery, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -255,7 +293,8 @@ const WelfareDB = {
     // Welfare service operations
     async getWelfareServices() {
         try {
-            const snapshot = await database.ref('welfare_services').once('value');
+            const servicesRef = ref(database, 'welfare_services');
+            const snapshot = await get(servicesRef);
             const services = snapshot.val() || {};
             console.log('Loaded welfare services:', Object.keys(services).length);
             return services;
@@ -268,7 +307,8 @@ const WelfareDB = {
     async addWelfareService(serviceData) {
         try {
             const serviceId = serviceData.id || 'service_' + Date.now();
-            await database.ref('welfare_services/' + serviceId).set(serviceData);
+            const serviceRef = ref(database, 'welfare_services/' + serviceId);
+            await set(serviceRef, serviceData);
             console.log('Welfare service added:', serviceId);
             return serviceId;
         } catch (error) {
@@ -279,7 +319,8 @@ const WelfareDB = {
 
     async updateWelfareService(serviceId, updateData) {
         try {
-            await database.ref('welfare_services/' + serviceId).update(updateData);
+            const serviceRef = ref(database, 'welfare_services/' + serviceId);
+            await update(serviceRef, updateData);
             console.log('Welfare service updated:', serviceId);
         } catch (error) {
             console.error('Error updating welfare service:', error);
@@ -288,7 +329,8 @@ const WelfareDB = {
     },
 
     onWelfareServicesChange(callback) {
-        database.ref('welfare_services').on('value', (snapshot) => {
+        const servicesRef = ref(database, 'welfare_services');
+        onValue(servicesRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -296,7 +338,8 @@ const WelfareDB = {
     // Admin operations
     async getAdmins() {
         try {
-            const snapshot = await database.ref('admins').once('value');
+            const adminsRef = ref(database, 'admins');
+            const snapshot = await get(adminsRef);
             const admins = snapshot.val() || {};
             console.log('Loaded admins:', Object.keys(admins).length);
             return admins;
@@ -309,7 +352,8 @@ const WelfareDB = {
     async addAdmin(adminData) {
         try {
             const adminId = adminData.id || 'admin_' + Date.now();
-            await database.ref('admins/' + adminId).set(adminData);
+            const adminRef = ref(database, 'admins/' + adminId);
+            await set(adminRef, adminData);
             console.log('Admin added:', adminId);
             return adminId;
         } catch (error) {
@@ -320,7 +364,8 @@ const WelfareDB = {
 
     async updateAdmin(adminId, updateData) {
         try {
-            await database.ref('admins/' + adminId).update(updateData);
+            const adminRef = ref(database, 'admins/' + adminId);
+            await update(adminRef, updateData);
             console.log('Admin updated:', adminId);
         } catch (error) {
             console.error('Error updating admin:', error);
@@ -329,7 +374,8 @@ const WelfareDB = {
     },
 
     onAdminsChange(callback) {
-        database.ref('admins').on('value', (snapshot) => {
+        const adminsRef = ref(database, 'admins');
+        onValue(adminsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -337,7 +383,8 @@ const WelfareDB = {
     // Role operations
     async getRoles() {
         try {
-            const snapshot = await database.ref('roles').once('value');
+            const rolesRef = ref(database, 'roles');
+            const snapshot = await get(rolesRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading roles:', error);
@@ -346,7 +393,8 @@ const WelfareDB = {
     },
 
     onRolesChange(callback) {
-        database.ref('roles').on('value', (snapshot) => {
+        const rolesRef = ref(database, 'roles');
+        onValue(rolesRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -354,7 +402,8 @@ const WelfareDB = {
     // System configuration operations
     async getSystemConfig() {
         try {
-            const snapshot = await database.ref('system_config').once('value');
+            const configRef = ref(database, 'system_config');
+            const snapshot = await get(configRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading system config:', error);
@@ -364,7 +413,8 @@ const WelfareDB = {
 
     async updateSystemConfig(configData) {
         try {
-            await database.ref('system_config').update(configData);
+            const configRef = ref(database, 'system_config');
+            await update(configRef, configData);
             console.log('System config updated');
         } catch (error) {
             console.error('Error updating system config:', error);
@@ -373,7 +423,8 @@ const WelfareDB = {
     },
 
     onSystemConfigChange(callback) {
-        database.ref('system_config').on('value', (snapshot) => {
+        const configRef = ref(database, 'system_config');
+        onValue(configRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -381,7 +432,8 @@ const WelfareDB = {
     // Notification operations
     async getNotifications() {
         try {
-            const snapshot = await database.ref('notifications').once('value');
+            const notificationsRef = ref(database, 'notifications');
+            const snapshot = await get(notificationsRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading notifications:', error);
@@ -391,7 +443,9 @@ const WelfareDB = {
 
     async getMemberNotifications(memberId) {
         try {
-            const snapshot = await database.ref('notifications').orderByChild('memberId').equalTo(memberId).once('value');
+            const notificationsRef = ref(database, 'notifications');
+            const memberNotificationsQuery = query(notificationsRef, orderByChild('memberId'), equalTo(memberId));
+            const snapshot = await get(memberNotificationsQuery);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading member notifications:', error);
@@ -402,7 +456,8 @@ const WelfareDB = {
     async addNotification(notificationData) {
         try {
             const notificationId = 'notification_' + Date.now();
-            await database.ref('notifications/' + notificationId).set(notificationData);
+            const notificationRef = ref(database, 'notifications/' + notificationId);
+            await set(notificationRef, notificationData);
             console.log('Notification added:', notificationId);
             return notificationId;
         } catch (error) {
@@ -412,13 +467,16 @@ const WelfareDB = {
     },
 
     onNotificationsChange(callback) {
-        database.ref('notifications').on('value', (snapshot) => {
+        const notificationsRef = ref(database, 'notifications');
+        onValue(notificationsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
 
     onMemberNotificationsChange(memberId, callback) {
-        database.ref('notifications').orderByChild('memberId').equalTo(memberId).on('value', (snapshot) => {
+        const notificationsRef = ref(database, 'notifications');
+        const memberNotificationsQuery = query(notificationsRef, orderByChild('memberId'), equalTo(memberId));
+        onValue(memberNotificationsQuery, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
@@ -427,7 +485,8 @@ const WelfareDB = {
     async addAuditLog(logData) {
         try {
             const logId = 'audit_' + Date.now();
-            await database.ref('audit_logs/' + logId).set(logData);
+            const logRef = ref(database, 'audit_logs/' + logId);
+            await set(logRef, logData);
             console.log('Audit log added:', logId);
             return logId;
         } catch (error) {
@@ -438,7 +497,8 @@ const WelfareDB = {
 
     async getAuditLogs() {
         try {
-            const snapshot = await database.ref('audit_logs').once('value');
+            const auditLogsRef = ref(database, 'audit_logs');
+            const snapshot = await get(auditLogsRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading audit logs:', error);
@@ -450,7 +510,8 @@ const WelfareDB = {
     async addRecentReport(reportData) {
         try {
             const reportId = reportData.id || 'report_' + Date.now();
-            await database.ref('recent_reports/' + reportId).set(reportData);
+            const reportRef = ref(database, 'recent_reports/' + reportId);
+            await set(reportRef, reportData);
             console.log('Recent report added:', reportId);
             return reportId;
         } catch (error) {
@@ -461,7 +522,8 @@ const WelfareDB = {
 
     async getRecentReports() {
         try {
-            const snapshot = await database.ref('recent_reports').once('value');
+            const reportsRef = ref(database, 'recent_reports');
+            const snapshot = await get(reportsRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading recent reports:', error);
@@ -473,7 +535,8 @@ const WelfareDB = {
     async addBackup(backupData) {
         try {
             const backupId = backupData.id || 'backup_' + Date.now();
-            await database.ref('backups/' + backupId).set(backupData);
+            const backupRef = ref(database, 'backups/' + backupId);
+            await set(backupRef, backupData);
             console.log('Backup added:', backupId);
             return backupId;
         } catch (error) {
@@ -484,7 +547,8 @@ const WelfareDB = {
 
     async getBackups() {
         try {
-            const snapshot = await database.ref('backups').once('value');
+            const backupsRef = ref(database, 'backups');
+            const snapshot = await get(backupsRef);
             return snapshot.val() || {};
         } catch (error) {
             console.error('Error loading backups:', error);
@@ -496,7 +560,8 @@ const WelfareDB = {
     async addPaymentTransaction(transactionData) {
         try {
             const transactionId = 'payment_' + Date.now();
-            await database.ref('payment_transactions/' + transactionId).set(transactionData);
+            const transactionRef = ref(database, 'payment_transactions/' + transactionId);
+            await set(transactionRef, transactionData);
             console.log('Payment transaction added:', transactionId);
             return transactionId;
         } catch (error) {
@@ -508,10 +573,13 @@ const WelfareDB = {
     async getPaymentTransactions(memberId = null) {
         try {
             if (memberId) {
-                const snapshot = await database.ref('payment_transactions').orderByChild('memberId').equalTo(memberId).once('value');
+                const transactionsRef = ref(database, 'payment_transactions');
+                const memberTransactionsQuery = query(transactionsRef, orderByChild('memberId'), equalTo(memberId));
+                const snapshot = await get(memberTransactionsQuery);
                 return snapshot.val() || {};
             } else {
-                const snapshot = await database.ref('payment_transactions').once('value');
+                const transactionsRef = ref(database, 'payment_transactions');
+                const snapshot = await get(transactionsRef);
                 return snapshot.val() || {};
             }
         } catch (error) {
@@ -521,13 +589,16 @@ const WelfareDB = {
     },
 
     onPaymentTransactionsChange(callback) {
-        database.ref('payment_transactions').on('value', (snapshot) => {
+        const transactionsRef = ref(database, 'payment_transactions');
+        onValue(transactionsRef, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
 
     onMemberPaymentTransactionsChange(memberId, callback) {
-        database.ref('payment_transactions').orderByChild('memberId').equalTo(memberId).on('value', (snapshot) => {
+        const transactionsRef = ref(database, 'payment_transactions');
+        const memberTransactionsQuery = query(transactionsRef, orderByChild('memberId'), equalTo(memberId));
+        onValue(memberTransactionsQuery, (snapshot) => {
             callback(snapshot.val() || {});
         });
     },
