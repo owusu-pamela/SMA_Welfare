@@ -1,86 +1,71 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { 
-    getDatabase, 
-    ref, 
-    set, 
-    get, 
-    update, 
-    onValue, 
-    query, 
-    orderByChild, 
-    equalTo,
-    push,
-    child 
-} from "firebase/database";
-
-// Your web app's Firebase configuration
+// Firebase Configuration - Complete Version with Member Features
 const firebaseConfig = {
-  apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
-  authDomain: "sunyani-municipal-welfare.firebaseapp.com",
-  databaseURL: "https://sunyani-municipal-welfare-default-rtdb.firebaseio.com",
-  projectId: "sunyani-municipal-welfare",
-  storageBucket: "sunyani-municipal-welfare.firebasestorage.app",
-  messagingSenderId: "690980483755",
-  appId: "1:690980483755:web:ce9bc7dcea698bd6d7fdee",
-  measurementId: "G-KRG057K0VW"
+    apiKey: "AIzaSyCqVYJp4f_L2HYXSi7MHWKqMcMXmEUrd5Y",
+    authDomain: "sunyani-municipal-welfare.firebaseapp.com",
+    databaseURL: "https://sunyani-municipal-welfare-default-rtdb.firebaseio.com",
+    projectId: "sunyani-municipal-welfare",
+    storageBucket: "sunyani-municipal-welfare.firebasestorage.app",
+    messagingSenderId: "690980483755",
+    appId: "1:690980483755:web:ce9bc7dcea698bd6d7fdee",
+    measurementId: "G-KRG057K0VW"
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const database = getDatabase(app);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+} else {
+    firebase.app(); // if already initialized, use that one
+}
 
-// Welfare Database Operations (Modular SDK v9+)
+const database = firebase.database();
+
+// Authentication check for all pages
+function checkAuth() {
+    const isLoggedIn = sessionStorage.getItem('welfare_loggedIn');
+    if (!isLoggedIn || isLoggedIn !== 'true') {
+        window.location.href = 'index.html';
+        return false;
+    }
+    return true;
+}
+
+// Check if user is admin
+function checkAdmin() {
+    const role = sessionStorage.getItem('welfare_role');
+    return role === 'admin';
+}
+
+// Check if user is member
+function checkMember() {
+    const role = sessionStorage.getItem('welfare_role');
+    return role === 'member';
+}
+
+// Utility functions for Firebase operations
 const WelfareDB = {
-    // Test database connection
-    async testConnection() {
-        try {
-            const testRef = ref(database, 'test_connection');
-            await set(testRef, {
-                timestamp: new Date().toISOString(),
-                status: 'connected'
-            });
-            console.log('Firebase connection test successful');
-            return true;
-        } catch (error) {
-            console.error('Firebase connection test failed:', error);
-            return false;
-        }
-    },
-
-    // Member operations
+    // Members operations
     async getMembers() {
         try {
-            const membersRef = ref(database, 'members');
-            const snapshot = await get(membersRef);
-            const members = snapshot.val() || {};
-            console.log('Loaded members:', Object.keys(members).length);
-            return members;
+            const snapshot = await database.ref('members').once('value');
+            const members = snapshot.val();
+            console.log('Fetched members:', members);
+            return members || {};
         } catch (error) {
-            console.error('Error loading members:', error);
+            console.error('Error fetching members:', error);
             return {};
-        }
-    },
-
-    async getMember(memberId) {
-        try {
-            const memberRef = ref(database, 'members/' + memberId);
-            const snapshot = await get(memberRef);
-            return snapshot.val();
-        } catch (error) {
-            console.error('Error loading member:', error);
-            return null;
         }
     },
 
     async addMember(memberData) {
         try {
-            const memberId = memberData.id || 'member_' + Date.now();
-            const memberRef = ref(database, 'members/' + memberId);
-            await set(memberRef, memberData);
-            console.log('Member added:', memberId);
+            const memberId = 'member_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('members/' + memberId).set({
+                ...memberData,
+                id: memberId,
+                createdAt: new Date().toISOString(),
+                status: 'active'
+            });
+            console.log('Member added successfully:', memberId);
             return memberId;
         } catch (error) {
             console.error('Error adding member:', error);
@@ -88,56 +73,66 @@ const WelfareDB = {
         }
     },
 
-    async updateMember(memberId, updateData) {
+    async updateMember(memberId, updates) {
         try {
-            const memberRef = ref(database, 'members/' + memberId);
-            await update(memberRef, updateData);
-            console.log('Member updated:', memberId);
+            await database.ref('members/' + memberId).update(updates);
+            console.log('Member updated successfully:', memberId);
         } catch (error) {
             console.error('Error updating member:', error);
             throw error;
         }
     },
 
-    onMembersChange(callback) {
-        const membersRef = ref(database, 'members');
-        onValue(membersRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Contribution operations
-    async getContributions() {
+    async deleteMember(memberId) {
         try {
-            const contributionsRef = ref(database, 'contributions');
-            const snapshot = await get(contributionsRef);
-            const contributions = snapshot.val() || {};
-            console.log('Loaded contributions:', Object.keys(contributions).length);
-            return contributions;
+            await database.ref('members/' + memberId).remove();
+            console.log('Member deleted successfully:', memberId);
         } catch (error) {
-            console.error('Error loading contributions:', error);
-            return {};
+            console.error('Error deleting member:', error);
+            throw error;
         }
     },
 
-    async getMemberContributions(memberId) {
+    // Contributions operations
+    async getContributions() {
         try {
-            const contributionsRef = ref(database, 'contributions');
-            const memberContributionsQuery = query(contributionsRef, orderByChild('memberId'), equalTo(memberId));
-            const snapshot = await get(memberContributionsQuery);
-            return snapshot.val() || {};
+            const snapshot = await database.ref('contributions').once('value');
+            const contributions = snapshot.val();
+            console.log('Raw contributions from Firebase:', contributions);
+            
+            // If no contributions exist, return empty object
+            if (!contributions) {
+                console.log('No contributions found in database');
+                return {};
+            }
+            
+            // Ensure all contributions have proper IDs
+            const contributionsWithIds = {};
+            Object.keys(contributions).forEach(key => {
+                contributionsWithIds[key] = {
+                    ...contributions[key],
+                    id: key // Ensure each contribution has an ID
+                };
+            });
+            
+            console.log('Processed contributions with IDs:', contributionsWithIds);
+            return contributionsWithIds;
         } catch (error) {
-            console.error('Error loading member contributions:', error);
+            console.error('Error fetching contributions:', error);
             return {};
         }
     },
 
     async addContribution(contributionData) {
         try {
-            const contributionId = 'contribution_' + Date.now();
-            const contributionRef = ref(database, 'contributions/' + contributionId);
-            await set(contributionRef, contributionData);
-            console.log('Contribution added:', contributionId);
+            const contributionId = 'contribution_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('contributions/' + contributionId).set({
+                ...contributionData,
+                id: contributionId,
+                timestamp: new Date().toISOString(),
+                recordedBy: sessionStorage.getItem('welfare_username') || 'Admin'
+            });
+            console.log('Contribution added successfully:', contributionId);
             return contributionId;
         } catch (error) {
             console.error('Error adding contribution:', error);
@@ -145,53 +140,67 @@ const WelfareDB = {
         }
     },
 
-    onContributionsChange(callback) {
-        const contributionsRef = ref(database, 'contributions');
-        onValue(contributionsRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    onMemberContributionsChange(memberId, callback) {
-        const contributionsRef = ref(database, 'contributions');
-        const memberContributionsQuery = query(contributionsRef, orderByChild('memberId'), equalTo(memberId));
-        onValue(memberContributionsQuery, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Withdrawal operations
-    async getWithdrawals() {
+    async updateContribution(contributionId, updates) {
         try {
-            const withdrawalsRef = ref(database, 'withdrawals');
-            const snapshot = await get(withdrawalsRef);
-            const withdrawals = snapshot.val() || {};
-            console.log('Loaded withdrawals:', Object.keys(withdrawals).length);
-            return withdrawals;
+            await database.ref('contributions/' + contributionId).update(updates);
+            console.log('Contribution updated successfully:', contributionId);
         } catch (error) {
-            console.error('Error loading withdrawals:', error);
-            return {};
+            console.error('Error updating contribution:', error);
+            throw error;
         }
     },
 
-    async getMemberWithdrawals(memberId) {
+    async deleteContribution(contributionId) {
         try {
-            const withdrawalsRef = ref(database, 'withdrawals');
-            const memberWithdrawalsQuery = query(withdrawalsRef, orderByChild('memberId'), equalTo(memberId));
-            const snapshot = await get(memberWithdrawalsQuery);
-            return snapshot.val() || {};
+            await database.ref('contributions/' + contributionId).remove();
+            console.log('Contribution deleted successfully:', contributionId);
         } catch (error) {
-            console.error('Error loading member withdrawals:', error);
+            console.error('Error deleting contribution:', error);
+            throw error;
+        }
+    },
+
+    // Withdrawals operations
+    async getWithdrawals() {
+        try {
+            const snapshot = await database.ref('withdrawals').once('value');
+            const withdrawals = snapshot.val();
+            console.log('Raw withdrawals from Firebase:', withdrawals);
+            
+            // If no withdrawals exist, return empty object
+            if (!withdrawals) {
+                console.log('No withdrawals found in database');
+                return {};
+            }
+            
+            // Ensure all withdrawals have proper IDs
+            const withdrawalsWithIds = {};
+            Object.keys(withdrawals).forEach(key => {
+                withdrawalsWithIds[key] = {
+                    ...withdrawals[key],
+                    id: key // Ensure each withdrawal has an ID
+                };
+            });
+            
+            console.log('Processed withdrawals with IDs:', withdrawalsWithIds);
+            return withdrawalsWithIds;
+        } catch (error) {
+            console.error('Error fetching withdrawals:', error);
             return {};
         }
     },
 
     async addWithdrawal(withdrawalData) {
         try {
-            const withdrawalId = 'withdrawal_' + Date.now();
-            const withdrawalRef = ref(database, 'withdrawals/' + withdrawalId);
-            await set(withdrawalRef, withdrawalData);
-            console.log('Withdrawal added:', withdrawalId);
+            const withdrawalId = 'withdrawal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('withdrawals/' + withdrawalId).set({
+                ...withdrawalData,
+                id: withdrawalId,
+                timestamp: new Date().toISOString(),
+                processedBy: sessionStorage.getItem('welfare_username') || 'Admin',
+                status: 'completed'
+            });
+            console.log('Withdrawal added successfully:', withdrawalId);
             return withdrawalId;
         } catch (error) {
             console.error('Error adding withdrawal:', error);
@@ -199,266 +208,344 @@ const WelfareDB = {
         }
     },
 
-    async updateWithdrawal(withdrawalId, updateData) {
+    async updateWithdrawal(withdrawalId, updates) {
         try {
-            const withdrawalRef = ref(database, 'withdrawals/' + withdrawalId);
-            await update(withdrawalRef, updateData);
-            console.log('Withdrawal updated:', withdrawalId);
+            await database.ref('withdrawals/' + withdrawalId).update(updates);
+            console.log('Withdrawal updated successfully:', withdrawalId);
         } catch (error) {
             console.error('Error updating withdrawal:', error);
             throw error;
         }
     },
 
-    onWithdrawalsChange(callback) {
-        const withdrawalsRef = ref(database, 'withdrawals');
-        onValue(withdrawalsRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    onMemberWithdrawalsChange(memberId, callback) {
-        const withdrawalsRef = ref(database, 'withdrawals');
-        const memberWithdrawalsQuery = query(withdrawalsRef, orderByChild('memberId'), equalTo(memberId));
-        onValue(memberWithdrawalsQuery, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Welfare application operations
-    async getWelfareApplications() {
+    async deleteWithdrawal(withdrawalId) {
         try {
-            const applicationsRef = ref(database, 'welfare_applications');
-            const snapshot = await get(applicationsRef);
-            const applications = snapshot.val() || {};
-            console.log('Loaded welfare applications:', Object.keys(applications).length);
-            return applications;
+            await database.ref('withdrawals/' + withdrawalId).remove();
+            console.log('Withdrawal deleted successfully:', withdrawalId);
         } catch (error) {
-            console.error('Error loading welfare applications:', error);
+            console.error('Error deleting withdrawal:', error);
+            throw error;
+        }
+    },
+
+    // System operations
+    async getSettings() {
+        try {
+            const snapshot = await database.ref('settings').once('value');
+            return snapshot.val() || {};
+        } catch (error) {
+            console.error('Error fetching settings:', error);
+            return {};
+        }
+    },
+
+    async updateSettings(updates) {
+        try {
+            await database.ref('settings').update(updates);
+            console.log('Settings updated successfully');
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            throw error;
+        }
+    },
+
+    // Member-specific operations
+    async getMemberContributions(memberId) {
+        try {
+            const contributions = await this.getContributions();
+            const memberContributions = {};
+            
+            Object.keys(contributions).forEach(key => {
+                if (contributions[key].memberId === memberId) {
+                    memberContributions[key] = contributions[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberContributions).length} contributions for member ${memberId}`);
+            return memberContributions;
+        } catch (error) {
+            console.error('Error getting member contributions:', error);
+            return {};
+        }
+    },
+
+    async getMemberWithdrawals(memberId) {
+        try {
+            const withdrawals = await this.getWithdrawals();
+            const memberWithdrawals = {};
+            
+            Object.keys(withdrawals).forEach(key => {
+                if (withdrawals[key].memberId === memberId) {
+                    memberWithdrawals[key] = withdrawals[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberWithdrawals).length} withdrawals for member ${memberId}`);
+            return memberWithdrawals;
+        } catch (error) {
+            console.error('Error getting member withdrawals:', error);
             return {};
         }
     },
 
     async getMemberWelfareApplications(memberId) {
         try {
-            const applicationsRef = ref(database, 'welfare_applications');
-            const memberApplicationsQuery = query(applicationsRef, orderByChild('memberId'), equalTo(memberId));
-            const snapshot = await get(memberApplicationsQuery);
-            return snapshot.val() || {};
+            const snapshot = await database.ref('welfareApplications').once('value');
+            const applications = snapshot.val() || {};
+            const memberApplications = {};
+            
+            Object.keys(applications).forEach(key => {
+                if (applications[key].memberId === memberId) {
+                    memberApplications[key] = applications[key];
+                }
+            });
+            
+            console.log(`Found ${Object.keys(memberApplications).length} welfare applications for member ${memberId}`);
+            return memberApplications;
         } catch (error) {
-            console.error('Error loading member welfare applications:', error);
+            console.error('Error getting member welfare applications:', error);
             return {};
         }
     },
 
-    async addWelfareApplication(applicationData) {
+    async submitWelfareApplication(applicationData) {
         try {
-            const applicationId = 'welfare_' + Date.now();
-            const applicationRef = ref(database, 'welfare_applications/' + applicationId);
-            await set(applicationRef, applicationData);
-            console.log('Welfare application added:', applicationId);
+            const applicationId = 'welfare_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('welfareApplications/' + applicationId).set({
+                ...applicationData,
+                id: applicationId,
+                submittedAt: new Date().toISOString(),
+                status: 'pending'
+            });
+            console.log('Welfare application submitted successfully:', applicationId);
             return applicationId;
         } catch (error) {
-            console.error('Error adding welfare application:', error);
+            console.error('Error submitting welfare application:', error);
             throw error;
         }
     },
 
-    async updateWelfareApplication(applicationId, updateData) {
+    async submitWithdrawalRequest(requestData) {
         try {
-            const applicationRef = ref(database, 'welfare_applications/' + applicationId);
-            await update(applicationRef, updateData);
-            console.log('Welfare application updated:', applicationId);
+            const requestId = 'withdrawal_req_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('withdrawalRequests/' + requestId).set({
+                ...requestData,
+                id: requestId,
+                submittedAt: new Date().toISOString(),
+                status: 'pending'
+            });
+            console.log('Withdrawal request submitted successfully:', requestId);
+            return requestId;
+        } catch (error) {
+            console.error('Error submitting withdrawal request:', error);
+            throw error;
+        }
+    },
+
+    async getWithdrawalRequests() {
+        try {
+            const snapshot = await database.ref('withdrawalRequests').once('value');
+            const requests = snapshot.val();
+            
+            if (!requests) {
+                console.log('No withdrawal requests found in database');
+                return {};
+            }
+            
+            const requestsWithIds = {};
+            Object.keys(requests).forEach(key => {
+                requestsWithIds[key] = {
+                    ...requests[key],
+                    id: key
+                };
+            });
+            
+            console.log('Processed withdrawal requests with IDs:', requestsWithIds);
+            return requestsWithIds;
+        } catch (error) {
+            console.error('Error fetching withdrawal requests:', error);
+            return {};
+        }
+    },
+
+    async updateWithdrawalRequest(requestId, updates) {
+        try {
+            await database.ref('withdrawalRequests/' + requestId).update(updates);
+            console.log('Withdrawal request updated successfully:', requestId);
+        } catch (error) {
+            console.error('Error updating withdrawal request:', error);
+            throw error;
+        }
+    },
+
+    async getWelfareApplications() {
+        try {
+            const snapshot = await database.ref('welfareApplications').once('value');
+            const applications = snapshot.val();
+            
+            if (!applications) {
+                console.log('No welfare applications found in database');
+                return {};
+            }
+            
+            const applicationsWithIds = {};
+            Object.keys(applications).forEach(key => {
+                applicationsWithIds[key] = {
+                    ...applications[key],
+                    id: key
+                };
+            });
+            
+            console.log('Processed welfare applications with IDs:', applicationsWithIds);
+            return applicationsWithIds;
+        } catch (error) {
+            console.error('Error fetching welfare applications:', error);
+            return {};
+        }
+    },
+
+    async updateWelfareApplication(applicationId, updates) {
+        try {
+            await database.ref('welfareApplications/' + applicationId).update(updates);
+            console.log('Welfare application updated successfully:', applicationId);
         } catch (error) {
             console.error('Error updating welfare application:', error);
             throw error;
         }
     },
 
+    // Real-time listeners
+    onMembersChange(callback) {
+        database.ref('members').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('members').off('value');
+    },
+
+    onContributionsChange(callback) {
+        database.ref('contributions').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('contributions').off('value');
+    },
+
+    onWithdrawalsChange(callback) {
+        database.ref('withdrawals').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('withdrawals').off('value');
+    },
+
+    onSettingsChange(callback) {
+        database.ref('settings').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('settings').off('value');
+    },
+
+    onWithdrawalRequestsChange(callback) {
+        database.ref('withdrawalRequests').on('value', (snapshot) => {
+            callback(snapshot.val() || {});
+        });
+        return () => database.ref('withdrawalRequests').off('value');
+    },
+
     onWelfareApplicationsChange(callback) {
-        const applicationsRef = ref(database, 'welfare_applications');
-        onValue(applicationsRef, (snapshot) => {
+        database.ref('welfareApplications').on('value', (snapshot) => {
             callback(snapshot.val() || {});
         });
+        return () => database.ref('welfareApplications').off('value');
     },
 
-    onMemberWelfareApplicationsChange(memberId, callback) {
-        const applicationsRef = ref(database, 'welfare_applications');
-        const memberApplicationsQuery = query(applicationsRef, orderByChild('memberId'), equalTo(memberId));
-        onValue(memberApplicationsQuery, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Welfare service operations
-    async getWelfareServices() {
+    // Utility methods
+    async getTotalContributions() {
         try {
-            const servicesRef = ref(database, 'welfare_services');
-            const snapshot = await get(servicesRef);
-            const services = snapshot.val() || {};
-            console.log('Loaded welfare services:', Object.keys(services).length);
-            return services;
+            const contributions = await this.getContributions();
+            return Object.values(contributions).reduce((sum, contribution) => {
+                return sum + (parseFloat(contribution.amount) || 0);
+            }, 0);
         } catch (error) {
-            console.error('Error loading welfare services:', error);
-            return {};
+            console.error('Error calculating total contributions:', error);
+            return 0;
         }
     },
 
-    async addWelfareService(serviceData) {
+    async getTotalWithdrawals() {
         try {
-            const serviceId = serviceData.id || 'service_' + Date.now();
-            const serviceRef = ref(database, 'welfare_services/' + serviceId);
-            await set(serviceRef, serviceData);
-            console.log('Welfare service added:', serviceId);
-            return serviceId;
+            const withdrawals = await this.getWithdrawals();
+            return Object.values(withdrawals).reduce((sum, withdrawal) => {
+                return sum + (parseFloat(withdrawal.amount) || 0);
+            }, 0);
         } catch (error) {
-            console.error('Error adding welfare service:', error);
+            console.error('Error calculating total withdrawals:', error);
+            return 0;
+        }
+    },
+
+    async getAvailableBalance() {
+        try {
+            const totalContributions = await this.getTotalContributions();
+            const totalWithdrawals = await this.getTotalWithdrawals();
+            return totalContributions - totalWithdrawals;
+        } catch (error) {
+            console.error('Error calculating available balance:', error);
+            return 0;
+        }
+    },
+
+    async getMemberBalance(memberId) {
+        try {
+            const memberContributions = await this.getMemberContributions(memberId);
+            const totalPaid = Object.values(memberContributions).reduce((sum, contribution) => {
+                return sum + (parseFloat(contribution.amount) || 0);
+            }, 0);
+            
+            // Calculate available withdrawal balance (typically a percentage of total paid)
+            const withdrawalPercentage = 0.5; // 50% of total contributions can be withdrawn
+            return totalPaid * withdrawalPercentage;
+        } catch (error) {
+            console.error('Error calculating member balance:', error);
+            return 0;
+        }
+    },
+
+    // Data export methods
+    async exportData() {
+        try {
+            const members = await this.getMembers();
+            const contributions = await this.getContributions();
+            const withdrawals = await this.getWithdrawals();
+            const settings = await this.getSettings();
+            const withdrawalRequests = await this.getWithdrawalRequests();
+            const welfareApplications = await this.getWelfareApplications();
+            
+            return {
+                members,
+                contributions,
+                withdrawals,
+                withdrawalRequests,
+                welfareApplications,
+                settings,
+                exportDate: new Date().toISOString(),
+                version: '1.0'
+            };
+        } catch (error) {
+            console.error('Error exporting data:', error);
             throw error;
         }
     },
 
-    async updateWelfareService(serviceId, updateData) {
-        try {
-            const serviceRef = ref(database, 'welfare_services/' + serviceId);
-            await update(serviceRef, updateData);
-            console.log('Welfare service updated:', serviceId);
-        } catch (error) {
-            console.error('Error updating welfare service:', error);
-            throw error;
-        }
-    },
-
-    onWelfareServicesChange(callback) {
-        const servicesRef = ref(database, 'welfare_services');
-        onValue(servicesRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Admin operations
-    async getAdmins() {
-        try {
-            const adminsRef = ref(database, 'admins');
-            const snapshot = await get(adminsRef);
-            const admins = snapshot.val() || {};
-            console.log('Loaded admins:', Object.keys(admins).length);
-            return admins;
-        } catch (error) {
-            console.error('Error loading admins:', error);
-            return {};
-        }
-    },
-
-    async addAdmin(adminData) {
-        try {
-            const adminId = adminData.id || 'admin_' + Date.now();
-            const adminRef = ref(database, 'admins/' + adminId);
-            await set(adminRef, adminData);
-            console.log('Admin added:', adminId);
-            return adminId;
-        } catch (error) {
-            console.error('Error adding admin:', error);
-            throw error;
-        }
-    },
-
-    async updateAdmin(adminId, updateData) {
-        try {
-            const adminRef = ref(database, 'admins/' + adminId);
-            await update(adminRef, updateData);
-            console.log('Admin updated:', adminId);
-        } catch (error) {
-            console.error('Error updating admin:', error);
-            throw error;
-        }
-    },
-
-    onAdminsChange(callback) {
-        const adminsRef = ref(database, 'admins');
-        onValue(adminsRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Role operations
-    async getRoles() {
-        try {
-            const rolesRef = ref(database, 'roles');
-            const snapshot = await get(rolesRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading roles:', error);
-            return {};
-        }
-    },
-
-    onRolesChange(callback) {
-        const rolesRef = ref(database, 'roles');
-        onValue(rolesRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // System configuration operations
-    async getSystemConfig() {
-        try {
-            const configRef = ref(database, 'system_config');
-            const snapshot = await get(configRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading system config:', error);
-            return {};
-        }
-    },
-
-    async updateSystemConfig(configData) {
-        try {
-            const configRef = ref(database, 'system_config');
-            await update(configRef, configData);
-            console.log('System config updated');
-        } catch (error) {
-            console.error('Error updating system config:', error);
-            throw error;
-        }
-    },
-
-    onSystemConfigChange(callback) {
-        const configRef = ref(database, 'system_config');
-        onValue(configRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Notification operations
-    async getNotifications() {
-        try {
-            const notificationsRef = ref(database, 'notifications');
-            const snapshot = await get(notificationsRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading notifications:', error);
-            return {};
-        }
-    },
-
-    async getMemberNotifications(memberId) {
-        try {
-            const notificationsRef = ref(database, 'notifications');
-            const memberNotificationsQuery = query(notificationsRef, orderByChild('memberId'), equalTo(memberId));
-            const snapshot = await get(memberNotificationsQuery);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading member notifications:', error);
-            return {};
-        }
-    },
-
+    // Notification methods
     async addNotification(notificationData) {
         try {
-            const notificationId = 'notification_' + Date.now();
-            const notificationRef = ref(database, 'notifications/' + notificationId);
-            await set(notificationRef, notificationData);
-            console.log('Notification added:', notificationId);
+            const notificationId = 'notification_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            await database.ref('notifications/' + notificationId).set({
+                ...notificationData,
+                id: notificationId,
+                createdAt: new Date().toISOString(),
+                read: false
+            });
+            console.log('Notification added successfully:', notificationId);
             return notificationId;
         } catch (error) {
             console.error('Error adding notification:', error);
@@ -466,302 +553,189 @@ const WelfareDB = {
         }
     },
 
-    onNotificationsChange(callback) {
-        const notificationsRef = ref(database, 'notifications');
-        onValue(notificationsRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    onMemberNotificationsChange(memberId, callback) {
-        const notificationsRef = ref(database, 'notifications');
-        const memberNotificationsQuery = query(notificationsRef, orderByChild('memberId'), equalTo(memberId));
-        onValue(memberNotificationsQuery, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Audit log operations
-    async addAuditLog(logData) {
+    async getMemberNotifications(memberId) {
         try {
-            const logId = 'audit_' + Date.now();
-            const logRef = ref(database, 'audit_logs/' + logId);
-            await set(logRef, logData);
-            console.log('Audit log added:', logId);
-            return logId;
+            const snapshot = await database.ref('notifications').once('value');
+            const notifications = snapshot.val() || {};
+            const memberNotifications = {};
+            
+            Object.keys(notifications).forEach(key => {
+                if (notifications[key].memberId === memberId || !notifications[key].memberId) {
+                    memberNotifications[key] = notifications[key];
+                }
+            });
+            
+            return memberNotifications;
         } catch (error) {
-            console.error('Error adding audit log:', error);
-            throw error;
-        }
-    },
-
-    async getAuditLogs() {
-        try {
-            const auditLogsRef = ref(database, 'audit_logs');
-            const snapshot = await get(auditLogsRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading audit logs:', error);
+            console.error('Error getting member notifications:', error);
             return {};
         }
     },
 
-    // Recent reports operations
-    async addRecentReport(reportData) {
+    async markNotificationAsRead(notificationId) {
         try {
-            const reportId = reportData.id || 'report_' + Date.now();
-            const reportRef = ref(database, 'recent_reports/' + reportId);
-            await set(reportRef, reportData);
-            console.log('Recent report added:', reportId);
-            return reportId;
+            await database.ref('notifications/' + notificationId).update({
+                read: true,
+                readAt: new Date().toISOString()
+            });
+            console.log('Notification marked as read:', notificationId);
         } catch (error) {
-            console.error('Error adding recent report:', error);
+            console.error('Error marking notification as read:', error);
             throw error;
-        }
-    },
-
-    async getRecentReports() {
-        try {
-            const reportsRef = ref(database, 'recent_reports');
-            const snapshot = await get(reportsRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading recent reports:', error);
-            return {};
-        }
-    },
-
-    // Backup operations
-    async addBackup(backupData) {
-        try {
-            const backupId = backupData.id || 'backup_' + Date.now();
-            const backupRef = ref(database, 'backups/' + backupId);
-            await set(backupRef, backupData);
-            console.log('Backup added:', backupId);
-            return backupId;
-        } catch (error) {
-            console.error('Error adding backup:', error);
-            throw error;
-        }
-    },
-
-    async getBackups() {
-        try {
-            const backupsRef = ref(database, 'backups');
-            const snapshot = await get(backupsRef);
-            return snapshot.val() || {};
-        } catch (error) {
-            console.error('Error loading backups:', error);
-            return {};
-        }
-    },
-
-    // Payment transaction operations
-    async addPaymentTransaction(transactionData) {
-        try {
-            const transactionId = 'payment_' + Date.now();
-            const transactionRef = ref(database, 'payment_transactions/' + transactionId);
-            await set(transactionRef, transactionData);
-            console.log('Payment transaction added:', transactionId);
-            return transactionId;
-        } catch (error) {
-            console.error('Error adding payment transaction:', error);
-            throw error;
-        }
-    },
-
-    async getPaymentTransactions(memberId = null) {
-        try {
-            if (memberId) {
-                const transactionsRef = ref(database, 'payment_transactions');
-                const memberTransactionsQuery = query(transactionsRef, orderByChild('memberId'), equalTo(memberId));
-                const snapshot = await get(memberTransactionsQuery);
-                return snapshot.val() || {};
-            } else {
-                const transactionsRef = ref(database, 'payment_transactions');
-                const snapshot = await get(transactionsRef);
-                return snapshot.val() || {};
-            }
-        } catch (error) {
-            console.error('Error loading payment transactions:', error);
-            return {};
-        }
-    },
-
-    onPaymentTransactionsChange(callback) {
-        const transactionsRef = ref(database, 'payment_transactions');
-        onValue(transactionsRef, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    onMemberPaymentTransactionsChange(memberId, callback) {
-        const transactionsRef = ref(database, 'payment_transactions');
-        const memberTransactionsQuery = query(transactionsRef, orderByChild('memberId'), equalTo(memberId));
-        onValue(memberTransactionsQuery, (snapshot) => {
-            callback(snapshot.val() || {});
-        });
-    },
-
-    // Authentication helper functions
-    async authenticateUser(username, password) {
-        try {
-            const admins = await this.getAdmins();
-            const members = await this.getMembers();
-            
-            // Check admins
-            const admin = Object.values(admins).find(a => 
-                a.username === username && a.password === password && a.status !== 'inactive'
-            );
-            
-            if (admin) {
-                return {
-                    success: true,
-                    user: admin,
-                    role: admin.role || 'admin',
-                    userId: admin.id
-                };
-            }
-            
-            // Check members
-            const member = Object.values(members).find(m => 
-                m.username === username && m.password === password && m.status === 'active'
-            );
-            
-            if (member) {
-                return {
-                    success: true,
-                    user: member,
-                    role: 'member',
-                    userId: member.id
-                };
-            }
-            
-            return {
-                success: false,
-                message: 'Invalid username or password'
-            };
-        } catch (error) {
-            console.error('Authentication error:', error);
-            return {
-                success: false,
-                message: 'Authentication failed'
-            };
-        }
-    },
-
-    // Utility function to get current user data
-    async getCurrentUser(userId, role) {
-        try {
-            if (role === 'member') {
-                return await this.getMember(userId);
-            } else {
-                const admins = await this.getAdmins();
-                return admins[userId];
-            }
-        } catch (error) {
-            console.error('Error getting current user:', error);
-            return null;
         }
     }
 };
 
-// Global helper functions
-function checkAuth() {
-    return sessionStorage.getItem('welfare_loggedIn') === 'true';
-}
-
-function checkAdmin() {
-    const role = sessionStorage.getItem('welfare_role');
-    return role && role !== 'member';
-}
-
-function checkSuperAdmin() {
-    const role = sessionStorage.getItem('welfare_role');
-    return role === 'super_admin';
-}
-
-function checkMember() {
-    const role = sessionStorage.getItem('welfare_role');
-    return role === 'member';
-}
-
-function showToast(message, type = 'info') {
+// Show toast notification
+function showToast(message, type = 'success') {
     // Remove existing toasts
     const existingToasts = document.querySelectorAll('.toast');
     existingToasts.forEach(toast => toast.remove());
     
-    // Create toast element
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-        <div class="toast-content">
-            <span class="toast-message">${message}</span>
-            <button class="toast-close" onclick="this.parentElement.parentElement.remove()">&times;</button>
-        </div>
-    `;
-    
-    // Add to page
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
     document.body.appendChild(toast);
     
-    // Show toast
+    setTimeout(() => toast.classList.add('show'), 100);
     setTimeout(() => {
-        toast.classList.add('show');
-    }, 100);
+        toast.classList.remove('show');
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Format currency
+function formatCurrency(amount) {
+    return `GH₵ ${parseFloat(amount).toFixed(2)}`;
+}
+
+// Date utilities
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+}
+
+function formatDateTime(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+}
+
+function getMonthName(monthNumber) {
+    const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                   'July', 'August', 'September', 'October', 'November', 'December'];
+    return months[monthNumber - 1] || 'Unknown';
+}
+
+// Validation utilities
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+function isValidPhone(phone) {
+    const phoneRegex = /^[0-9+\-\s()]{10,}$/;
+    return phoneRegex.test(phone);
+}
+
+function isValidAmount(amount) {
+    return !isNaN(amount) && parseFloat(amount) > 0;
+}
+
+// Storage utilities
+function getCurrentUser() {
+    return {
+        username: sessionStorage.getItem('welfare_username'),
+        userId: sessionStorage.getItem('welfare_userId'),
+        role: sessionStorage.getItem('welfare_role'),
+        lastLogin: sessionStorage.getItem('welfare_lastLogin')
+    };
+}
+
+function clearUserSession() {
+    sessionStorage.removeItem('welfare_loggedIn');
+    sessionStorage.removeItem('welfare_username');
+    sessionStorage.removeItem('welfare_userId');
+    sessionStorage.removeItem('welfare_role');
+    sessionStorage.removeItem('welfare_lastLogin');
+}
+
+// Debug utilities
+async function debugDatabase() {
+    console.log('=== DATABASE DEBUG INFO ===');
     
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.remove();
+    try {
+        const members = await WelfareDB.getMembers();
+        const contributions = await WelfareDB.getContributions();
+        const withdrawals = await WelfareDB.getWithdrawals();
+        const withdrawalRequests = await WelfareDB.getWithdrawalRequests();
+        const welfareApplications = await WelfareDB.getWelfareApplications();
+        
+        console.log('Members count:', Object.keys(members).length);
+        console.log('Contributions count:', Object.keys(contributions).length);
+        console.log('Withdrawals count:', Object.keys(withdrawals).length);
+        console.log('Withdrawal Requests count:', Object.keys(withdrawalRequests).length);
+        console.log('Welfare Applications count:', Object.keys(welfareApplications).length);
+        
+        const totalContributions = await WelfareDB.getTotalContributions();
+        const totalWithdrawals = await WelfareDB.getTotalWithdrawals();
+        const availableBalance = await WelfareDB.getAvailableBalance();
+        
+        console.log('Total Contributions:', formatCurrency(totalContributions));
+        console.log('Total Withdrawals:', formatCurrency(totalWithdrawals));
+        console.log('Available Balance:', formatCurrency(availableBalance));
+        
+    } catch (error) {
+        console.error('Debug error:', error);
+    }
+}
+
+// Initialize default data if needed
+async function initializeDefaultData() {
+    try {
+        const adminRef = database.ref('admin');
+        const snapshot = await adminRef.once('value');
+        
+        if (!snapshot.exists()) {
+            await adminRef.set({
+                username: 'abc',
+                password: '12345',
+                email: 'admin@sunyaniwelfare.com',
+                createdAt: new Date().toISOString(),
+                role: 'administrator'
+            });
+            console.log('Default admin user created');
         }
-    }, 5000);
-}
-
-function showLoading(message = 'Loading...') {
-    // Remove existing loading
-    const existingLoading = document.getElementById('loadingOverlay');
-    if (existingLoading) {
-        existingLoading.remove();
-    }
-    
-    // Create loading overlay
-    const loading = document.createElement('div');
-    loading.id = 'loadingOverlay';
-    loading.className = 'loading-overlay';
-    loading.innerHTML = `
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p>${message}</p>
-        </div>
-    `;
-    
-    document.body.appendChild(loading);
-}
-
-function hideLoading() {
-    const loading = document.getElementById('loadingOverlay');
-    if (loading) {
-        loading.remove();
+        
+        // Initialize settings if they don't exist
+        const settingsRef = database.ref('settings');
+        const settingsSnapshot = await settingsRef.once('value');
+        
+        if (!settingsSnapshot.exists()) {
+            await settingsRef.set({
+                systemName: 'Sunyani Municipal Welfare',
+                currency: 'GHS',
+                defaultMonthlyContribution: 50.00,
+                fiscalYearStart: 'January',
+                withdrawalPercentage: 0.5,
+                minWithdrawalAmount: 100.00,
+                maxWithdrawalAmount: 5000.00,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            });
+            console.log('Default settings created');
+        }
+        
+    } catch (error) {
+        console.error('Error initializing default data:', error);
     }
 }
 
-// Make WelfareDB globally available
-window.WelfareDB = WelfareDB;
-window.showToast = showToast;
-window.showLoading = showLoading;
-window.hideLoading = hideLoading;
-window.checkAuth = checkAuth;
-window.checkAdmin = checkAdmin;
-window.checkSuperAdmin = checkSuperAdmin;
-window.checkMember = checkMember;
-
-// Test connection when page loads
-document.addEventListener('DOMContentLoaded', async () => {
-    const connected = await WelfareDB.testConnection();
-    if (connected) {
-        console.log('Firebase connection established successfully');
-    } else {
-        console.error('Failed to connect to Firebase');
-        showToast('Database connection failed. Please check your internet connection.', 'error');
-    }
+// Call initialization when the config loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Firebase configuration loaded');
+    initializeDefaultData();
 });
