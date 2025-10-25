@@ -3,38 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Dashboard - SUNYANI MUNICIPAL WELFARE</title>
+    <title>Member Dashboard - Sunyani Municipal Assembly</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
 </head>
 <body>
     <div class="app-container">
-        <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <h1>🌅 SUNYANI MUNICIPAL WELFARE</h1>
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System - Member Portal</p>
+                    </div>
+                </div>
                 <div class="header-actions">
                     <span class="welcome-msg" id="welcomeMessage">Welcome, Member</span>
-                    <button id="logoutBtn" class="logout-btn">Logout</button>
+                    <div class="notification-bell" onclick="showNotifications()">🔔 <span id="notificationCount">0</span></div>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
                 </div>
             </div>
         </header>
 
-        <!-- Navigation -->
         <nav class="main-nav">
-            <a href="member-dashboard.html" class="nav-link active">🏠 My Dashboard</a>
-            <a href="member-profile.html" class="nav-link">👤 My Profile</a>
+            <a href="member-dashboard.html" class="nav-link active">🏠 Dashboard</a>
             <a href="member-contributions.html" class="nav-link">💰 My Contributions</a>
-            <a href="member-welfare.html" class="nav-link">🛡️ Welfare Services</a>
             <a href="member-withdrawals.html" class="nav-link">🏧 My Withdrawals</a>
+            <a href="member-welfare.html" class="nav-link">🛡️ Welfare Services</a>
+            <a href="member-profile.html" class="nav-link">👤 My Profile</a>
+            <a href="member-statements.html" class="nav-link">📊 Statements</a>
         </nav>
 
-        <!-- Main Content -->
         <main class="main-content">
             <div class="page-header">
                 <h2>Member Dashboard</h2>
-                <p id="lastUpdate">Welcome to your personal dashboard</p>
+                <p id="lastLogin">Welcome back! Last login: Loading...</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="applyForWelfare()">🛡️ Apply for Welfare</button>
+                    <button class="btn-secondary" onclick="requestWithdrawal()">🏧 Request Withdrawal</button>
+                </div>
             </div>
 
             <!-- Quick Stats -->
@@ -42,86 +52,190 @@
                 <div class="stat-card">
                     <div class="stat-icon">💰</div>
                     <div class="stat-info">
-                        <h3>Total Paid</h3>
-                        <p class="stat-number" id="totalPaid">GH₵ 0.00</p>
+                        <h3>Total Contributions</h3>
+                        <p class="stat-number" id="totalContributions">GH₵ 0.00</p>
+                        <small id="availableBalance">Available: GH₵ 0.00</small>
                     </div>
                 </div>
-
                 <div class="stat-card">
-                    <div class="stat-icon">📅</div>
+                    <div class="stat-icon">🏧</div>
                     <div class="stat-info">
-                        <h3>This Month</h3>
-                        <p class="stat-number" id="monthPaid">GH₵ 0.00</p>
+                        <h3>Total Withdrawals</h3>
+                        <p class="stat-number" id="totalWithdrawals">GH₵ 0.00</p>
+                        <small id="withdrawalLimit">Limit: GH₵ 0.00</small>
                     </div>
                 </div>
-
-                <div class="stat-card">
-                    <div class="stat-icon">⏰</div>
-                    <div class="stat-info">
-                        <h3>Next Due</h3>
-                        <p class="stat-number" id="nextDueDate">Not Due</p>
-                    </div>
-                </div>
-
                 <div class="stat-card">
                     <div class="stat-icon">🛡️</div>
                     <div class="stat-info">
-                        <h3>Welfare Status</h3>
-                        <p class="stat-number" id="welfareStatus">Active</p>
+                        <h3>Welfare Applications</h3>
+                        <p class="stat-number" id="welfareApplications">0</p>
+                        <small id="pendingApplications">Pending: 0</small>
                     </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">📅</div>
+                    <div class="stat-info">
+                        <h3>Next Due Date</h3>
+                        <p class="stat-number" id="nextDueDate">15th</p>
+                        <small id="monthlyDue">Monthly: GH₵ 0.00</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payment Status -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>📅 Payment Status</h3>
+                    <button class="btn-primary" onclick="makePayment()" id="payNowBtn">💳 Pay Now</button>
+                </div>
+                <div class="payment-status-grid">
+                    <div class="month-status paid">
+                        <div class="month-name">January</div>
+                        <div class="payment-amount">GH₵ 50.00</div>
+                        <div class="payment-date">Paid: 12 Jan</div>
+                        <div class="status-badge paid">✅ Paid</div>
+                    </div>
+                    <div class="month-status paid">
+                        <div class="month-name">February</div>
+                        <div class="payment-amount">GH₵ 50.00</div>
+                        <div class="payment-date">Paid: 10 Feb</div>
+                        <div class="status-badge paid">✅ Paid</div>
+                    </div>
+                    <div class="month-status pending">
+                        <div class="month-name">March</div>
+                        <div class="payment-amount">GH₵ 50.00</div>
+                        <div class="payment-date">Due: 15 Mar</div>
+                        <div class="status-badge pending">⏰ Due Soon</div>
+                    </div>
+                    <div class="month-status upcoming">
+                        <div class="month-name">April</div>
+                        <div class="payment-amount">GH₵ 50.00</div>
+                        <div class="payment-date">Due: 15 Apr</div>
+                        <div class="status-badge upcoming">📅 Upcoming</div>
+                    </div>
+                    <!-- More months will be loaded dynamically -->
                 </div>
             </div>
 
             <!-- Quick Actions -->
-            <div class="quick-actions">
-                <h3>Quick Actions</h3>
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="makePayment()">
-                        💳 Make Payment
-                    </button>
-                    <button class="action-btn" onclick="location.href='member-contributions.html'">
-                        📊 View History
-                    </button>
-                    <button class="action-btn" onclick="location.href='member-welfare.html'">
-                        🛡️ Apply for Welfare
-                    </button>
-                    <button class="action-btn" onclick="location.href='member-withdrawals.html'">
-                        🏧 Request Withdrawal
-                    </button>
+            <div class="dashboard-section">
+                <h3>🚀 Quick Actions</h3>
+                <div class="quick-actions-grid">
+                    <div class="action-card" onclick="viewContributions()">
+                        <div class="action-icon">💰</div>
+                        <h4>View Contributions</h4>
+                        <p>Check your payment history and records</p>
+                    </div>
+                    <div class="action-card" onclick="applyForWelfare()">
+                        <div class="action-icon">🛡️</div>
+                        <h4>Apply for Welfare</h4>
+                        <p>Submit welfare service application</p>
+                    </div>
+                    <div class="action-card" onclick="requestWithdrawal()">
+                        <div class="action-icon">🏧</div>
+                        <h4>Request Withdrawal</h4>
+                        <p>Withdraw from your savings</p>
+                    </div>
+                    <div class="action-card" onclick="downloadStatement()">
+                        <div class="action-icon">📄</div>
+                        <h4>Download Statement</h4>
+                        <p>Get your contribution statement</p>
+                    </div>
+                    <div class="action-card" onclick="updateProfile()">
+                        <div class="action-icon">👤</div>
+                        <h4>Update Profile</h4>
+                        <p>Update your personal information</p>
+                    </div>
+                    <div class="action-card" onclick="contactSupport()">
+                        <div class="action-icon">💬</div>
+                        <h4>Contact Support</h4>
+                        <p>Get help from administrators</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Recent Activity & Notifications -->
+            <!-- Recent Activity -->
             <div class="dashboard-sections">
                 <div class="section">
-                    <h3>📋 Recent Contributions</h3>
-                    <div class="activities-list" id="recentContributions">
+                    <h3>📋 Recent Transactions</h3>
+                    <div class="activities-list" id="recentTransactions">
                         <div class="activity-item">
-                            <span class="activity-text">Loading your contributions...</span>
+                            <span class="activity-text">Loading recent transactions...</span>
                         </div>
                     </div>
+                    <button class="btn-secondary" onclick="viewContributions()">View All Transactions</button>
                 </div>
 
                 <div class="section">
-                    <h3>🔔 Notifications</h3>
-                    <div class="notifications-list" id="notificationsList">
-                        <div class="notification-item">
-                            <span class="notification-text">Welcome to Sunyani Municipal Welfare!</span>
+                    <h3>🛡️ Welfare Applications</h3>
+                    <div class="activities-list" id="recentWelfareApplications">
+                        <div class="activity-item">
+                            <span class="activity-text">Loading welfare applications...</span>
                         </div>
+                    </div>
+                    <button class="btn-secondary" onclick="viewWelfareApplications()">View All Applications</button>
+                </div>
+            </div>
+
+            <!-- Contribution Progress -->
+            <div class="dashboard-section">
+                <h3>📈 Contribution Progress</h3>
+                <div class="progress-charts">
+                    <div class="progress-chart">
+                        <h4>Annual Contribution Target</h4>
+                        <div class="progress-circle">
+                            <div class="circle-bg"></div>
+                            <div class="circle-progress" id="annualProgress"></div>
+                            <div class="circle-text">
+                                <span class="progress-percent" id="annualPercent">0%</span>
+                                <span class="progress-amount" id="annualAmount">GH₵ 0 / 600</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress-chart">
+                        <h4>Monthly Consistency</h4>
+                        <canvas id="monthlyConsistencyChart" width="400" height="200"></canvas>
                     </div>
                 </div>
             </div>
 
-            <!-- Payment Reminder -->
-            <div class="payment-reminder" id="paymentReminder" style="display: none;">
-                <h3>💡 Payment Reminder</h3>
-                <p id="reminderMessage">Your next payment is due soon.</p>
-                <button class="btn-primary" onclick="makePayment()">Pay Now</button>
+            <!-- Notifications & Alerts -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>🔔 Notifications & Alerts</h3>
+                    <button class="btn-secondary" onclick="markAllAsRead()">Mark All as Read</button>
+                </div>
+                <div class="notifications-list" id="notificationsList">
+                    <div class="notification-item unread">
+                        <div class="notification-icon">💰</div>
+                        <div class="notification-content">
+                            <h4>Payment Reminder</h4>
+                            <p>Your March contribution of GH₵ 50.00 is due on 15th March</p>
+                            <small>2 days ago</small>
+                        </div>
+                        <button class="notification-action" onclick="makePayment()">Pay Now</button>
+                    </div>
+                    <!-- More notifications will be loaded dynamically -->
+                </div>
             </div>
         </main>
     </div>
 
-    <!-- Make Payment Modal -->
+    <!-- Notifications Panel -->
+    <div id="notificationsPanel" class="notifications-panel" style="display: none;">
+        <div class="notifications-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" onclick="hideNotifications()">&times;</button>
+        </div>
+        <div class="notifications-list" id="panelNotificationsList">
+            <div class="notification-item">
+                <span class="notification-text">No new notifications</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
     <div id="paymentModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -131,60 +245,118 @@
             <form id="paymentForm">
                 <div class="form-group">
                     <label for="paymentAmount">Amount (GH₵) *</label>
-                    <input type="number" id="paymentAmount" min="0" step="0.01" required>
-                    <small>Your monthly contribution: <span id="monthlyContributionDisplay">GH₵ 0.00</span></small>
+                    <input type="number" id="paymentAmount" value="50.00" min="50" step="0.01" required>
                 </div>
                 <div class="form-group">
                     <label for="paymentMonth">For Month *</label>
                     <select id="paymentMonth" required>
-                        <option value="">Select Month</option>
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="paymentYear">Year *</label>
-                    <select id="paymentYear" required>
-                        <option value="2024">2024</option>
-                        <option value="2025">2025</option>
+                        <option value="3">March 2024</option>
+                        <option value="4">April 2024</option>
+                        <option value="5">May 2024</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="paymentMethod">Payment Method *</label>
-                    <select id="paymentMethod" required>
-                        <option value="Mobile Money">Mobile Money</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Cash">Cash</option>
+                    <select id="paymentMethod" required onchange="togglePaymentDetails()">
+                        <option value="">Select Method</option>
+                        <option value="mobile_money">Mobile Money</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="cash">Cash Payment</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="paymentReference">Payment Reference</label>
-                    <input type="text" id="paymentReference" placeholder="Transaction ID or reference">
+                <div class="form-group" id="mobileMoneyDetails" style="display: none;">
+                    <label for="mobileNumber">Mobile Money Number</label>
+                    <input type="tel" id="mobileNumber" placeholder="e.g., 0551234567">
                 </div>
                 <div class="payment-summary">
                     <h4>Payment Summary</h4>
                     <div class="summary-item">
                         <span>Amount:</span>
-                        <span id="summaryPaymentAmount">GH₵ 0.00</span>
+                        <span id="summaryAmount">GH₵ 50.00</span>
                     </div>
                     <div class="summary-item">
-                        <span>For:</span>
-                        <span id="summaryPaymentPeriod">Month Year</span>
+                        <span>Service Fee:</span>
+                        <span id="summaryFee">GH₵ 0.00</span>
+                    </div>
+                    <div class="summary-item total">
+                        <span>Total:</span>
+                        <span id="summaryTotal">GH₵ 50.00</span>
                     </div>
                 </div>
                 <div class="form-actions">
                     <button type="button" class="btn-secondary" onclick="closePaymentModal()">Cancel</button>
-                    <button type="submit" class="btn-primary">💳 Submit Payment</button>
+                    <button type="submit" class="btn-primary">💳 Proceed to Pay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Welfare Application Modal -->
+    <div id="welfareApplicationModal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Apply for Welfare Service</h3>
+                <button class="close-btn" onclick="closeWelfareModal()">&times;</button>
+            </div>
+            <form id="welfareApplicationForm">
+                <div class="form-sections">
+                    <div class="form-section">
+                        <h4>🛡️ Service Selection</h4>
+                        <div class="form-group">
+                            <label for="welfareService">Select Service *</label>
+                            <select id="welfareService" required onchange="updateServiceDetails()">
+                                <option value="">Select a welfare service</option>
+                                <!-- Services will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div class="service-details" id="serviceDetails" style="display: none;">
+                            <h5>Service Details</h5>
+                            <p id="serviceDescription"></p>
+                            <div class="service-meta">
+                                <span>Max Amount: <strong id="serviceMaxAmount">GH₵ 0.00</strong></span>
+                                <span>Requirements: <span id="serviceRequirements">None</span></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>📝 Application Details</h4>
+                        <div class="form-group">
+                            <label for="applicationAmount">Requested Amount (GH₵) *</label>
+                            <input type="number" id="applicationAmount" min="0" step="0.01" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="applicationReason">Reason for Application *</label>
+                            <textarea id="applicationReason" rows="4" required placeholder="Please describe why you need this welfare service..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="supportingDocuments">Supporting Documents</label>
+                            <textarea id="supportingDocuments" rows="2" placeholder="List any supporting documents you can provide (medical reports, bills, etc.)"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h4>📞 Contact Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="applicantPhone">Phone Number *</label>
+                                <input type="tel" id="applicantPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="applicantEmail">Email Address</label>
+                                <input type="email" id="applicantEmail">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="applicantAddress">Current Address</label>
+                            <textarea id="applicantAddress" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeWelfareModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">📨 Submit Application</button>
                 </div>
             </form>
         </div>
