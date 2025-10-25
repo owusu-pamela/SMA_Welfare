@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welfare Management - Sunyani Municipal Assembly</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
+                    <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
+            <a href="members.html" class="nav-link">👥 Members</a>
+            <a href="contributions.html" class="nav-link">💰 Contributions</a>
+            <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link active">🛡️ Welfare Management</a>
+            <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link">⚙️ Admin Settings</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Welfare Service Management</h2>
+                <p>Manage welfare applications, approvals, and service tracking</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showAddServiceModal()">➕ Add Welfare Service</button>
+                    <button class="btn-secondary" onclick="generateWelfareReport()">📄 Export Welfare Report</button>
+                </div>
+            </div>
+
+            <!-- Welfare Service Types -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>🏥 Available Welfare Services</h3>
+                    <button class="btn-secondary" onclick="showManageServicesModal()">Manage Services</button>
+                </div>
+                <div class="services-grid" id="servicesGrid">
+                    <div class="loading-text">Loading welfare services...</div>
+                </div>
+            </div>
+
+            <!-- Application Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📋</div>
+                    <div class="stat-info">
+                        <h3>Total Applications</h3>
+                        <p class="stat-number" id="totalApplications">0</p>
+                        <small id="pendingApplications">0 Pending</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3>Approved</h3>
+                        <p class="stat-number" id="approvedApplications">0</p>
+                        <small id="approvedAmount">GH₵ 0.00</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-info">
+                        <h3>Rejected</h3>
+                        <p class="stat-number" id="rejectedApplications">0</p>
+                        <small>This Month: 0</small>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>Total Payout</h3>
+                        <p class="stat-number" id="totalPayout">GH₵ 0.00</p>
+                        <small>This Month: GH₵ 0.00</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Application Queue -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>⏰ Application Queue - Pending Review</h3>
+                    <div class="filter-group">
+                        <label for="queueFilter">Filter by Service:</label>
+                        <select id="queueFilter" onchange="filterApplications()">
+                            <option value="">All Services</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="applications-queue" id="applicationsQueue">
+                    <div class="loading-text">Loading pending applications...</div>
+                </div>
+            </div>
+
+            <!-- Application Tabs -->
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab-button active" onclick="openTab('pending-tab')">⏰ Pending</button>
+                    <button class="tab-button" onclick="openTab('approved-tab')">✅ Approved</button>
+                    <button class="tab-button" onclick="openTab('rejected-tab')">❌ Rejected</button>
+                    <button class="tab-button" onclick="openTab('completed-tab')">🏁 Completed</button>
+                </div>
+
+                <div id="pending-tab" class="tab-content active">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Application ID</th>
+                                    <th>Member</th>
+                                    <th>Service Type</th>
+                                    <th>Amount</th>
+                                    <th>Submitted</th>
+                                    <th>Priority</th>
+                                    <th>Queue Position</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pendingApplicationsTable">
+                                <tr><td colspan="8">Loading pending applications...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="approved-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Application ID</th>
+                                    <th>Member</th>
+                                    <th>Service Type</th>
+                                    <th>Amount</th>
+                                    <th>Approved Date</th>
+                                    <th>Approved By</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approvedApplicationsTable">
+                                <tr><td colspan="8">No approved applications</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="rejected-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Application ID</th>
+                                    <th>Member</th>
+                                    <th>Service Type</th>
+                                    <th>Amount</th>
+                                    <th>Rejected Date</th>
+                                    <th>Reason</th>
+                                    <th>Rejected By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="rejectedApplicationsTable">
+                                <tr><td colspan="8">No rejected applications</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="completed-tab" class="tab-content">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Application ID</th>
+                                    <th>Member</th>
+                                    <th>Service Type</th>
+                                    <th>Amount</th>
+                                    <th>Completed Date</th>
+                                    <th>Service Provided</th>
+                                    <th>Served By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completedApplicationsTable">
+                                <tr><td colspan="8">No completed applications</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Welfare Service Modal -->
+    <div id="addServiceModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add New Welfare Service</h3>
+                <button class="close-btn" onclick="closeAddServiceModal()">&times;</button>
+            </div>
+            <form id="addServiceForm">
+                <div class="form-group">
+                    <label for="serviceName">Service Name *</label>
+                    <input type="text" id="serviceName" required>
+                </div>
+                <div class="form-group">
+                    <label for="serviceDescription">Service Description</label>
+                    <textarea id="serviceDescription" rows="3"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="serviceCategory">Category *</label>
+                        <select id="serviceCategory" required>
+                            <option value="">Select Category</option>
+                            <option value="financial">Financial Assistance</option>
+                            <option value="medical">Medical Support</option>
+                            <option value="educational">Educational Support</option>
+                            <option value="emergency">Emergency Relief</option>
+                            <option value="other">Other Support</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="serviceMaxAmount">Maximum Amount (GH₵)</label>
+                        <input type="number" id="serviceMaxAmount" min="0" step="0.01">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="serviceRequirements">Eligibility Requirements</label>
+                    <textarea id="serviceRequirements" rows="3" placeholder="List the requirements to qualify for this service"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="serviceDocuments">Required Documents</label>
+                    <textarea id="serviceDocuments" rows="2" placeholder="List documents needed for application"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="serviceActive">
+                        <span>Active Service (Accepting applications)</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddServiceModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">💾 Add Service</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manage Services Modal -->
+    <div id="manageServicesModal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Manage Welfare Services</h3>
+                <button class="close-btn" onclick="closeManageServicesModal()">&times;</button>
+            </div>
+            <div class="services-management" id="servicesManagementList">
+                <div class="loading-text">Loading services...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Review Modal -->
+    <div id="reviewApplicationModal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Review Welfare Application</h3>
+                <button class="close-btn" onclick="closeReviewModal()">&times;</button>
+            </div>
+            <div id="reviewApplicationContent">
+                <!-- Dynamic content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Payout Modal -->
+    <div id="payoutModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Process Welfare Payout</h3>
+                <button class="close-btn" onclick="closePayoutModal()">&times;</button>
+            </div>
+            <form id="payoutForm">
+                <div id="payoutApplicationContent">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+                <div class="form-group">
+                    <label for="payoutAmount">Payout Amount (GH₵) *</label>
+                    <input type="number" id="payoutAmount" required min="0" step="0.01">
+                </div>
+                <div class="form-group">
+                    <label for="payoutMethod">Payout Method *</label>
+                    <select id="payoutMethod" required>
+                        <option value="">Select Method</option>
+                        <option value="cash">Cash Payment</option>
+                        <option value="bank_transfer">Bank Transfer</option>
+                        <option value="mobile_money">Mobile Money</option>
+                        <option value="service_provision">Direct Service Provision</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="payoutPurpose">Purpose of Payout *</label>
+                    <textarea id="payoutPurpose" required rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="payoutNotes">Additional Notes</label>
+                    <textarea id="payoutNotes" rows="2"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closePayoutModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">💰 Process Payout</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/welfare-management.js"></script>
+</body>
+</html>
