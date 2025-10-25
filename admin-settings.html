@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Settings - Sunyani Municipal Assembly</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
+                    <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
+            <a href="members.html" class="nav-link">👥 Members</a>
+            <a href="contributions.html" class="nav-link">💰 Contributions</a>
+            <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link">🛡️ Welfare Management</a>
+            <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link active">⚙️ Admin Settings</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Administrative Settings</h2>
+                <p>Manage system configuration, admin accounts, and security settings</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showAddAdminModal()">➕ Add Admin</button>
+                    <button class="btn-secondary" onclick="showSystemBackupModal()">💾 System Backup</button>
+                </div>
+            </div>
+
+            <!-- Admin Management -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>👨‍💼 Admin Accounts Management</h3>
+                    <div class="admin-stats">
+                        <span class="stat-badge">Total Admins: <strong id="totalAdmins">0</strong></span>
+                        <span class="stat-badge">Active: <strong id="activeAdmins">0</strong></span>
+                        <span class="stat-badge">Super Admins: <strong id="superAdmins">0</strong></span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Admin Name</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Permissions</th>
+                                <th>Last Login</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminsTable">
+                            <tr><td colspan="7" class="loading-text">Loading admin accounts...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Role Permissions Configuration -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>🔐 Role-Based Permissions</h3>
+                    <button class="btn-secondary" onclick="showAddRoleModal()">➕ Add Role</button>
+                </div>
+                <div class="roles-grid" id="rolesGrid">
+                    <div class="role-card super-admin">
+                        <div class="role-header">
+                            <h4>Super Administrator</h4>
+                            <span class="role-badge">System Owner</span>
+                        </div>
+                        <div class="role-description">
+                            <p>Full system access with all permissions. Can manage all admin accounts and system settings.</p>
+                        </div>
+                        <div class="role-permissions">
+                            <span class="permission-tag">All Permissions</span>
+                        </div>
+                        <div class="role-actions">
+                            <button class="btn-secondary" disabled>Cannot Modify</button>
+                        </div>
+                    </div>
+                    <!-- Dynamic roles will be loaded here -->
+                </div>
+            </div>
+
+            <!-- System Configuration -->
+            <div class="dashboard-sections">
+                <div class="section">
+                    <h3>⚙️ System Configuration</h3>
+                    <form id="systemConfigForm">
+                        <div class="form-group">
+                            <label for="systemName">System Name</label>
+                            <input type="text" id="systemName" value="Sunyani Municipal Assembly Welfare System">
+                        </div>
+                        <div class="form-group">
+                            <label for="systemCurrency">Default Currency</label>
+                            <select id="systemCurrency">
+                                <option value="GHS" selected>Ghana Cedi (GH₵)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="contributionDeadline">Monthly Contribution Deadline</label>
+                            <select id="contributionDeadline">
+                                <option value="5">5th of Month</option>
+                                <option value="10">10th of Month</option>
+                                <option value="15" selected>15th of Month</option>
+                                <option value="20">20th of Month</option>
+                                <option value="25">25th of Month</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="withdrawalReserve">Withdrawal Reserve Percentage</label>
+                            <input type="number" id="withdrawalReserve" min="10" max="80" value="50" step="5">
+                            <small>Percentage of contributions kept as reserve (Current: 50%)</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="autoReminders">Automatic Payment Reminders</label>
+                            <select id="autoReminders">
+                                <option value="enabled">Enabled</option>
+                                <option value="disabled">Disabled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="maxEmergencyWithdrawal">Max Emergency Withdrawal (%)</label>
+                            <input type="number" id="maxEmergencyWithdrawal" min="10" max="100" value="30" step="5">
+                            <small>Maximum percentage of savings for emergency withdrawal</small>
+                        </div>
+                        <button type="submit" class="btn-primary">💾 Save Configuration</button>
+                    </form>
+                </div>
+
+                <div class="section">
+                    <h3>🔒 Security Settings</h3>
+                    <form id="securityConfigForm">
+                        <div class="form-group">
+                            <label for="sessionTimeout">Session Timeout (minutes)</label>
+                            <input type="number" id="sessionTimeout" min="15" max="480" value="120">
+                        </div>
+                        <div class="form-group">
+                            <label for="maxLoginAttempts">Max Login Attempts</label>
+                            <input type="number" id="maxLoginAttempts" min="3" max="10" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label for="passwordExpiry">Password Expiry (days)</label>
+                            <input type="number" id="passwordExpiry" min="30" max="365" value="90">
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="requireStrongPassword" checked>
+                                <span>Require Strong Passwords</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="twoFactorAuth">
+                                <span>Enable Two-Factor Authentication</span>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="loginNotifications" checked>
+                                <span>Email Login Notifications</span>
+                            </label>
+                        </div>
+                        <button type="submit" class="btn-primary">🔒 Update Security</button>
+                    </form>
+
+                    <div class="security-actions">
+                        <h4>Quick Actions</h4>
+                        <div class="action-buttons">
+                            <button class="btn-secondary" onclick="forcePasswordReset()">🔄 Force Password Reset</button>
+                            <button class="btn-secondary" onclick="viewAuditLog()">📋 View Audit Log</button>
+                            <button class="btn-danger" onclick="terminateAllSessions()">🚪 Terminate All Sessions</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health & Monitoring -->
+            <div class="dashboard-section">
+                <h3>📊 System Health & Performance</h3>
+                <div class="health-stats">
+                    <div class="health-card">
+                        <div class="health-icon">💾</div>
+                        <div class="health-info">
+                            <h4>Database Size</h4>
+                            <p class="health-value" id="dbSize">0 MB</p>
+                            <small>Total data stored</small>
+                        </div>
+                    </div>
+                    <div class="health-card">
+                        <div class="health-icon">👥</div>
+                        <div class="health-info">
+                            <h4>Active Users</h4>
+                            <p class="health-value" id="activeUsers">0</p>
+                            <small>Currently logged in</small>
+                        </div>
+                    </div>
+                    <div class="health-card">
+                        <div class="health-icon">⚡</div>
+                        <div class="health-info">
+                            <h4>System Uptime</h4>
+                            <p class="health-value" id="systemUptime">100%</p>
+                            <small>Last 30 days</small>
+                        </div>
+                    </div>
+                    <div class="health-card">
+                        <div class="health-icon">🛡️</div>
+                        <div class="health-info">
+                            <h4>Security Score</h4>
+                            <p class="health-value" id="securityScore">A+</p>
+                            <small>System security rating</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backup & Recovery -->
+            <div class="dashboard-section">
+                <div class="section-header">
+                    <h3>💾 Backup & Recovery</h3>
+                    <div class="backup-actions">
+                        <button class="btn-primary" onclick="createBackup()">🔄 Create Backup</button>
+                        <button class="btn-secondary" onclick="showRestoreModal()">📥 Restore Backup</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Backup Name</th>
+                                <th>Date Created</th>
+                                <th>Size</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="backupsTable">
+                            <tr><td colspan="6" class="loading-text">Loading backups...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Admin Modal -->
+    <div id="addAdminModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create New Admin Account</h3>
+                <button class="close-btn" onclick="closeAddAdminModal()">&times;</button>
+            </div>
+            <form id="addAdminForm">
+                <div class="form-group">
+                    <label for="adminFullName">Full Name *</label>
+                    <input type="text" id="adminFullName" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminEmail">Email Address *</label>
+                    <input type="email" id="adminEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminUsername">Username *</label>
+                    <input type="text" id="adminUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminRole">Admin Role *</label>
+                    <select id="adminRole" required onchange="updatePermissionDisplay()">
+                        <option value="">Select Role</option>
+                        <option value="super_admin">Super Administrator</option>
+                        <option value="admin">Administrator</option>
+                        <option value="manager">Manager</option>
+                        <option value="viewer">Viewer</option>
+                        <option value="custom">Custom Role</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customPermissionsSection" style="display: none;">
+                    <label>Custom Permissions</label>
+                    <div class="permissions-grid">
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="member_management">
+                            <span>Member Management</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="contribution_management">
+                            <span>Contribution Management</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="withdrawal_management">
+                            <span>Withdrawal Management</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="welfare_management">
+                            <span>Welfare Management</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="report_generation">
+                            <span>Report Generation</span>
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" name="permissions" value="system_settings">
+                            <span>System Settings</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">Temporary Password *</label>
+                    <input type="password" id="adminPassword" required>
+                    <small>Admin will be required to change password on first login</small>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="sendWelcomeEmail" checked>
+                        <span>Send welcome email with login instructions</span>
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddAdminModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">👨‍💼 Create Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Admin Modal -->
+    <div id="editAdminModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Admin Account</h3>
+                <button class="close-btn" onclick="closeEditAdminModal()">&times;</button>
+            </div>
+            <form id="editAdminForm">
+                <div id="editAdminContent">
+                    <!-- Dynamic content will be loaded here -->
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- System Backup Modal -->
+    <div id="systemBackupModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>System Backup & Export</h3>
+                <button class="close-btn" onclick="closeSystemBackupModal()">&times;</button>
+            </div>
+            <div class="backup-options">
+                <h4>Backup Options</h4>
+                <div class="option-cards">
+                    <div class="option-card" onclick="createFullBackup()">
+                        <div class="option-icon">💾</div>
+                        <h5>Full System Backup</h5>
+                        <p>Complete database backup including all records and files</p>
+                    </div>
+                    <div class="option-card" onclick="createDataBackup()">
+                        <div class="option-icon">📊</div>
+                        <h5>Data Only Backup</h5>
+                        <p>Backup only member and transaction data</p>
+                    </div>
+                    <div class="option-card" onclick="exportReports()">
+                        <div class="option-icon">📋</div>
+                        <h5>Reports Export</h5>
+                        <p>Export all reports and analytics data</p>
+                    </div>
+                </div>
+                <div class="backup-settings">
+                    <h4>Backup Settings</h4>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="encryptBackup" checked>
+                            <span>Encrypt backup files</span>
+                        </label>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="includeAuditLogs" checked>
+                            <span>Include audit logs</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/firebase-config.js"></script>
+    <script src="js/admin-settings.js"></script>
+</body>
+</html>
