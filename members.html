@@ -1,640 +1,412 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Members — SMA Welfare</title>
-  <link rel="stylesheet" href="styles.css">
-  <style>
-    /* minor page-specific tweaks to match your dashboard look */
-    .page-title { margin-bottom: 12px; }
-    .card { background:#fff; padding:16px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,0.06); }
-    .tabs { display:flex; gap:8px; margin-bottom:12px; }
-    .tab { padding:8px 12px; border-radius:6px; background:#f1f3f5; cursor:pointer; }
-    .tab.active { background:#0b63d6; color:#fff; }
-    .form-row { display:flex; gap:12px; align-items:center; }
-    .form-col { flex:1; }
-    .small-col { width:180px; }
-    .muted { color:#666; font-size:0.95rem; }
-    .btn { padding:10px 14px;border-radius:8px;border:none;cursor:pointer; }
-    .btn-primary { background:#0b63d6; color:#fff; }
-    .btn-ghost { background:#eee; }
-    .file-preview { max-height:90px; margin-top:8px; border-radius:6px; }
-    .hidden { display:none !important; }
-    .section-title { font-weight:700; margin-top:8px; margin-bottom:6px; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Member Management - Sunyani Municipal Assembly</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 </head>
 <body>
-  <!-- keep your header/sidebar using same classes so CSS applies -->
-  <!-- If you have a header include file or server-side include, keep that. -->
-  <div class="app">
-    <!-- copy of your normal header/sidebar markup to keep consistent look -->
-    <div class="sidebar">
-      <!-- existing sidebar markup from your system -->
-      <div class="brand">SMA Welfare</div>
-      <ul class="nav">
-        <li><a href="dashboard.html">Dashboard</a></li>
-        <li><a class="active" href="members.html">Members</a></li>
-        <li><a href="contributions.html">Contributions</a></li>
-        <li><a href="welfare-management.html">Welfare</a></li>
-        <li><a href="withdrawals.html">Withdrawals</a></li>
-        <li><a href="reports.html">Reports</a></li>
-      </ul>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="logo-section">
+                    <div class="official-logo">🏛️</div>
+                    <div class="header-text">
+                        <h1>SUNYANI MUNICIPAL ASSEMBLY</h1>
+                        <p>Welfare Management System</p>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <span class="welcome-msg" id="welcomeMessage">Welcome, Admin</span>
+                    <button onclick="location.href='dashboard.html'" class="logout-btn">← Dashboard</button>
+                    <button onclick="logout()" class="logout-btn">Logout</button>
+                </div>
+            </div>
+        </header>
+
+        <nav class="main-nav">
+            <a href="dashboard.html" class="nav-link">🏠 Dashboard</a>
+            <a href="members.html" class="nav-link active">👥 Members</a>
+            <a href="contributions.html" class="nav-link">💰 Contributions</a>
+            <a href="withdrawals.html" class="nav-link">🏧 Withdrawals</a>
+            <a href="welfare-management.html" class="nav-link">🛡️ Welfare Management</a>
+            <a href="reports.html" class="nav-link">📊 Reports</a>
+            <a href="admin-settings.html" class="nav-link">⚙️ Admin Settings</a>
+        </nav>
+
+        <main class="main-content">
+            <div class="page-header">
+                <h2>Member Management</h2>
+                <p>Manage all assembly staff members and their welfare accounts</p>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showAddMemberModal()">➕ Add New Member</button>
+                    <button class="btn-secondary" onclick="generateMembersReport()">📄 Export Members List</button>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-info">
+                        <h3>Total Members</h3>
+                        <p class="stat-number" id="totalMembers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-info">
+                        <h3>Active Members</h3>
+                        <p class="stat-number" id="activeMembers">0</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💰</div>
+                    <div class="stat-info">
+                        <h3>This Month Collection</h3>
+                        <p class="stat-number" id="monthCollection">GH₵ 0.00</p>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⏰</div>
+                    <div class="stat-info">
+                        <h3>Pending Approvals</h3>
+                        <p class="stat-number" id="pendingApprovals">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="departmentFilter">Department:</label>
+                    <select id="departmentFilter">
+                        <option value="">All Departments</option>
+                        <option value="Administration">Administration</option>
+                        <option value="Finance">Finance</option>
+                        <option value="Health">Health</option>
+                        <option value="Education">Education</option>
+                        <option value="Works">Works</option>
+                        <option value="Planning">Planning</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="statusFilter">Status:</label>
+                    <select id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="paymentFilter">Payment Mode:</label>
+                    <select id="paymentFilter">
+                        <option value="">All Modes</option>
+                        <option value="cash">Cash</option>
+                        <option value="controller">Salary Controller</option>
+                    </select>
+                </div>
+                <button class="btn-secondary" onclick="applyFilters()">🔍 Apply Filters</button>
+                <button class="btn-secondary" onclick="clearFilters()">🔄 Clear</button>
+            </div>
+
+            <!-- Members Table -->
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Staff ID</th>
+                            <th>Full Name</th>
+                            <th>Department</th>
+                            <th>Role</th>
+                            <th>Phone</th>
+                            <th>Payment Mode</th>
+                            <th>Monthly Due</th>
+                            <th>Status</th>
+                            <th>Balance</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="membersTableBody">
+                        <tr>
+                            <td colspan="10" class="loading-text">Loading members...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
     </div>
 
-    <div class="main">
-      <header class="header">
-        <div class="header-content">
-          <h1 class="page-title">Member Management</h1>
-          <div id="authShort" class="muted">Not signed in</div>
-        </div>
-      </header>
-
-      <main class="container">
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <h2 style="margin:0">Register / Update Member</h2>
-              <p class="muted" style="margin:4px 0 0 0">Members create account (email + password) then complete registration.</p>
+    <!-- Add Member Modal -->
+    <div id="addMemberModal" class="modal" style="display: none;">
+        <div class="modal-content large-modal">
+            <div class="modal-header">
+                <h3>Register New Assembly Staff Member</h3>
+                <button class="close-btn" onclick="closeAddMemberModal()">&times;</button>
             </div>
-            <div>
-              <button id="btnSignIn" class="btn btn-ghost">Sign In</button>
-              <button id="btnSignUp" class="btn btn-primary">Create Account</button>
-            </div>
-          </div>
+            <form id="addMemberForm">
+                <div class="form-sections">
+                    <!-- Personal Information -->
+                    <div class="form-section">
+                        <h4>👤 Personal Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberTitle">Title</label>
+                                <select id="memberTitle">
+                                    <option value="Mr.">Mr.</option>
+                                    <option value="Mrs.">Mrs.</option>
+                                    <option value="Miss">Miss</option>
+                                    <option value="Dr.">Dr.</option>
+                                    <option value="Prof.">Prof.</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberFullName">Full Name *</label>
+                                <input type="text" id="memberFullName" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberDob">Date of Birth *</label>
+                                <input type="date" id="memberDob" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberAge">Age</label>
+                                <input type="number" id="memberAge" readonly>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberMaritalStatus">Marital Status *</label>
+                                <select id="memberMaritalStatus" required>
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                </select>
+                            </div>
+                            <div class="form-group" id="spouseSection" style="display: none;">
+                                <label for="memberSpouseName">Spouse Name</label>
+                                <input type="text" id="memberSpouseName">
+                            </div>
+                        </div>
+                    </div>
 
-          <hr style="margin:12px 0">
+                    <!-- Employment Information -->
+                    <div class="form-section">
+                        <h4>💼 Employment Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberStaffId">Staff ID *</label>
+                                <input type="text" id="memberStaffId" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberDepartment">Department *</label>
+                                <select id="memberDepartment" required>
+                                    <option value="">Select Department</option>
+                                    <option value="Administration">Administration</option>
+                                    <option value="Finance">Finance</option>
+                                    <option value="Health">Health</option>
+                                    <option value="Education">Education</option>
+                                    <option value="Works">Works</option>
+                                    <option value="Planning">Planning</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberRole">Role/Position *</label>
+                                <input type="text" id="memberRole" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberJoinDate">Employment Date *</label>
+                                <input type="date" id="memberJoinDate" required>
+                            </div>
+                        </div>
+                    </div>
 
-          <!-- auth forms -->
-          <div id="authBoxes">
-            <div id="signinBox" class="hidden">
-              <h3>Sign In</h3>
-              <div class="form-row">
-                <input id="signinEmail" placeholder="Email" />
-                <input id="signinPass" placeholder="Password" type="password" />
-                <button id="signinBtn" class="btn btn-primary">Sign in</button>
-                <button id="cancelSignin" class="btn btn-ghost">Cancel</button>
-              </div>
-              <div id="signinMsg" class="muted"></div>
-            </div>
+                    <!-- Contact Information -->
+                    <div class="form-section">
+                        <h4>📞 Contact Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberPhone">Phone Number *</label>
+                                <input type="tel" id="memberPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberEmail">Email Address *</label>
+                                <input type="email" id="memberEmail" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="memberAddress">Residential Address *</label>
+                            <textarea id="memberAddress" rows="3" required></textarea>
+                        </div>
+                    </div>
 
-            <div id="signupBox" class="hidden">
-              <h3>Create account</h3>
-              <div class="form-row">
-                <input id="signupEmail" placeholder="Email" />
-                <input id="signupPass" placeholder="Password (min 6 chars)" type="password" />
-                <button id="signupBtn" class="btn btn-primary">Create</button>
-                <button id="cancelSignup" class="btn btn-ghost">Cancel</button>
-              </div>
-              <div id="signupMsg" class="muted"></div>
-            </div>
-          </div>
+                    <!-- Identification -->
+                    <div class="form-section">
+                        <h4>🆔 Identification Documents</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberIdType">ID Type *</label>
+                                <select id="memberIdType" required>
+                                    <option value="">Select ID Type</option>
+                                    <option value="Voter ID">Voter ID</option>
+                                    <option value="National ID">National ID</option>
+                                    <option value="Passport">Passport</option>
+                                    <option value="Driver License">Driver License</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberIdNumber">ID Number *</label>
+                                <input type="text" id="memberIdNumber" required>
+                            </div>
+                        </div>
+                    </div>
 
-          <!-- tabs -->
-          <div style="margin-top:12px;">
-            <div class="tabs" id="tabs">
-              <div class="tab active" data-tab="personal">Personal</div>
-              <div class="tab" data-tab="family">Family</div>
-              <div class="tab" data-tab="documents">Documents</div>
-              <div class="tab" data-tab="review">Review & Save</div>
-            </div>
+                    <!-- Next of Kin -->
+                    <div class="form-section">
+                        <h4>👨‍👩‍👧‍👦 Next of Kin Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberNokName">Next of Kin Name *</label>
+                                <input type="text" id="memberNokName" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberNokRelationship">Relationship *</label>
+                                <input type="text" id="memberNokRelationship" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberNokPhone">Next of Kin Phone *</label>
+                                <input type="tel" id="memberNokPhone" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberNokAddress">Next of Kin Address</label>
+                                <input type="text" id="memberNokAddress">
+                            </div>
+                        </div>
+                    </div>
 
-            <form id="memberForm">
-              <!-- Personal -->
-              <div class="tabContent" id="personal">
-                <div class="form-row">
-                  <div class="form-col">
-                    <label>Full name *</label>
-                    <input id="fullName" required />
-                  </div>
-                  <div class="small-col">
-                    <label>Age *</label>
-                    <input id="age" type="number" min="0" />
-                  </div>
+                    <!-- Parents Information -->
+                    <div class="form-section">
+                        <h4>👴👵 Parents Information</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberFatherName">Father's Name</label>
+                                <input type="text" id="memberFatherName">
+                            </div>
+                            <div class="form-group">
+                                <label for="memberFatherStatus">Father's Status</label>
+                                <select id="memberFatherStatus">
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberMotherName">Mother's Name</label>
+                                <input type="text" id="memberMotherName">
+                            </div>
+                            <div class="form-group">
+                                <label for="memberMotherStatus">Mother's Status</label>
+                                <select id="memberMotherStatus">
+                                    <option value="Alive">Alive</option>
+                                    <option value="Deceased">Deceased</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Children Information -->
+                    <div class="form-section">
+                        <h4>👶 Children Information</h4>
+                        <div id="childrenContainer">
+                            <div class="child-entry">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label>Child Name</label>
+                                        <input type="text" class="child-name" placeholder="Child full name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Date of Birth</label>
+                                        <input type="date" class="child-dob">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Action</label>
+                                        <button type="button" class="btn-danger remove-child">Remove</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="addChildField()">➕ Add Child</button>
+                    </div>
+
+                    <!-- Payment Settings -->
+                    <div class="form-section">
+                        <h4>💰 Payment Settings</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberPaymentMode">Payment Mode *</label>
+                                <select id="memberPaymentMode" required>
+                                    <option value="">Select Mode</option>
+                                    <option value="cash">Cash Payment</option>
+                                    <option value="controller">Salary Controller</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberMonthlyDue">Monthly Due (GH₵) *</label>
+                                <input type="number" id="memberMonthlyDue" min="0" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Creation -->
+                    <div class="form-section">
+                        <h4>🔐 Account Creation</h4>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="memberUsername">Username *</label>
+                                <input type="text" id="memberUsername" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="memberPassword">Temporary Password *</label>
+                                <input type="password" id="memberPassword" required>
+                                <small>Member will change this on first login</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Consent Agreement -->
+                    <div class="form-section">
+                        <h4>✅ Consent Agreement</h4>
+                        <div class="consent-box">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="memberConsent" required>
+                                <span>I hereby declare that all information provided above is true and accurate to the best of my knowledge. I agree to abide by the rules and regulations of the Sunyani Municipal Assembly Welfare Scheme.</span>
+                            </label>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="form-row">
-                  <div class="form-col">
-                    <label>Role / Job title</label>
-                    <input id="role" />
-                  </div>
-                  <div class="form-col">
-                    <label>Office / Department</label>
-                    <select id="office">
-                      <option value="">Select department</option>
-                      <option>Administration</option>
-                      <option>Finance</option>
-                      <option>Health</option>
-                      <option>Education</option>
-                      <option>Works</option>
-                      <option>Planning</option>
-                    </select>
-                  </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeAddMemberModal()">Cancel</button>
+                    <button type="submit" class="btn-primary">💾 Register Member</button>
                 </div>
-
-                <div class="form-row">
-                  <div class="form-col">
-                    <label>Phone *</label>
-                    <input id="phone" />
-                  </div>
-                  <div class="form-col">
-                    <label>Email (account email will show here)</label>
-                    <input id="emailDisplay" disabled />
-                  </div>
-                </div>
-
-                <div class="form-row" style="margin-top:6px">
-                  <div class="form-col">
-                    <label>Payment mode</label>
-                    <select id="payMode">
-                      <option value="cash">Cash</option>
-                      <option value="controller">Controller (salary)</option>
-                    </select>
-                  </div>
-                  <div class="form-col">
-                    <label>Staff ID</label>
-                    <input id="staffId" />
-                  </div>
-                </div>
-
-                <div style="margin-top:8px" class="muted">Create an account first (email & password). After sign in you can save the registration.</div>
-              </div>
-
-              <!-- Family -->
-              <div class="tabContent hidden" id="family">
-                <div class="form-row">
-                  <div class="form-col">
-                    <label>Marital status</label>
-                    <select id="marital">
-                      <option value="single">Single</option>
-                      <option value="married">Married</option>
-                      <option value="divorced">Divorced</option>
-                      <option value="widowed">Widowed</option>
-                    </select>
-                  </div>
-                  <div class="form-col">
-                    <label>Number of children</label>
-                    <input id="numChildren" type="number" min="0" value="0" />
-                  </div>
-                </div>
-
-                <div style="margin-top:8px">
-                  <label>Children (name & DOB)</label>
-                  <div id="childrenList"></div>
-                  <button type="button" id="addChild" class="btn btn-ghost">Add child</button>
-                </div>
-
-                <div style="margin-top:10px" class="form-row">
-                  <div class="form-col">
-                    <label>Spouse name</label><input id="spouseName" />
-                  </div>
-                  <div class="form-col">
-                    <label>Spouse contact</label><input id="spouseContact" />
-                  </div>
-                </div>
-
-                <div style="margin-top:8px" class="form-row">
-                  <div class="form-col">
-                    <label>Next of kin (name)</label><input id="nokName" />
-                  </div>
-                  <div class="form-col">
-                    <label>Next of kin (contact)</label><input id="nokContact" />
-                  </div>
-                </div>
-
-                <div style="margin-top:8px" class="form-row">
-                  <div class="form-col">
-                    <label>Father's name</label><input id="fatherName" />
-                    <label><input id="fatherAlive" type="checkbox"> Father alive</label>
-                  </div>
-                  <div class="form-col">
-                    <label>Mother's name</label><input id="motherName" />
-                    <label><input id="motherAlive" type="checkbox"> Mother alive</label>
-                  </div>
-                </div>
-
-                <div style="margin-top:8px">
-                  <label>Date of birth</label>
-                  <input id="dob" type="date" />
-                </div>
-              </div>
-
-              <!-- Documents -->
-              <div class="tabContent hidden" id="documents">
-                <div class="form-row">
-                  <div class="form-col">
-                    <label>ID Type</label>
-                    <select id="idType">
-                      <option value="passport">Passport</option>
-                      <option value="voter">Voter ID</option>
-                      <option value="national">National ID</option>
-                      <option value="driver">Driver's license</option>
-                    </select>
-                  </div>
-                  <div class="form-col">
-                    <label>ID Number</label><input id="idNumber" />
-                  </div>
-                </div>
-
-                <div style="margin-top:8px" class="form-row">
-                  <div class="form-col">
-                    <label>Upload passport (jpg/png)</label>
-                    <input id="passportFile" type="file" accept="image/*" />
-                    <img id="passportPreview" class="file-preview hidden" />
-                  </div>
-                  <div class="form-col">
-                    <label>Upload selfie (jpg/png)</label>
-                    <input id="selfieFile" type="file" accept="image/*" />
-                    <img id="selfiePreview" class="file-preview hidden" />
-                  </div>
-                </div>
-              </div>
-
-              <!-- Review -->
-              <div class="tabContent hidden" id="review">
-                <h3>Review details</h3>
-                <div id="reviewBox" class="muted"></div>
-
-                <div style="margin-top:12px">
-                  <label><input id="consent" type="checkbox" /> I confirm the above information is true and may be stored.</label>
-                </div>
-
-                <div style="margin-top:12px">
-                  <button id="saveBtn" type="button" class="btn btn-primary">Save registration</button>
-                  <button id="signOutBtn" type="button" class="btn btn-ghost">Logout</button>
-                </div>
-
-                <div id="saveMsg" class="muted" style="margin-top:8px"></div>
-              </div>
             </form>
-          </div>
         </div>
-
-        <!-- small members quick list for admin -->
-        <div class="card" style="margin-top:14px">
-          <h3>Members quick list</h3>
-          <div style="display:flex;gap:8px;align-items:center">
-            <input id="searchMember" placeholder="Search name / staff ID / phone" style="flex:1" />
-            <button id="btnRefreshMembers" class="btn btn-ghost">Refresh</button>
-          </div>
-          <div id="memberList" style="margin-top:10px"></div>
-        </div>
-      </main>
     </div>
-  </div>
 
-  <!-- Firebase v8 (global) - your project already includes js/firebase-config.js which initializes firebase -->
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
-
-  <!-- existing firebase config in your project -->
-  <script src="js/firebase-config.js"></script>
-
-  <script>
-    // Page logic using firebase global (v8) already initialized by js/firebase-config.js
-    const auth = firebase.auth();
-    const db = firebase.database();
-    const storage = firebase.storage();
-
-    // UI elements
-    const btnSignIn = document.getElementById('btnSignIn');
-    const btnSignUp = document.getElementById('btnSignUp');
-    const signinBox = document.getElementById('signinBox');
-    const signupBox = document.getElementById('signupBox');
-    const signinBtn = document.getElementById('signinBtn');
-    const signupBtn = document.getElementById('signupBtn');
-    const cancelSignin = document.getElementById('cancelSignin');
-    const cancelSignup = document.getElementById('cancelSignup');
-    const signinEmail = document.getElementById('signinEmail');
-    const signinPass = document.getElementById('signinPass');
-    const signupEmail = document.getElementById('signupEmail');
-    const signupPass = document.getElementById('signupPass');
-    const signinMsg = document.getElementById('signinMsg');
-    const signupMsg = document.getElementById('signupMsg');
-    const authShort = document.getElementById('authShort');
-
-    const tabs = document.querySelectorAll('.tab');
-    const tabContents = document.querySelectorAll('.tabContent');
-
-    const fullName = document.getElementById('fullName');
-    const age = document.getElementById('age');
-    const role = document.getElementById('role');
-    const office = document.getElementById('office');
-    const phone = document.getElementById('phone');
-    const emailDisplay = document.getElementById('emailDisplay');
-    const payMode = document.getElementById('payMode');
-    const staffId = document.getElementById('staffId');
-    const marital = document.getElementById('marital');
-    const numChildren = document.getElementById('numChildren');
-    const childrenList = document.getElementById('childrenList');
-    const addChild = document.getElementById('addChild');
-    const spouseName = document.getElementById('spouseName');
-    const spouseContact = document.getElementById('spouseContact');
-    const nokName = document.getElementById('nokName');
-    const nokContact = document.getElementById('nokContact');
-    const fatherName = document.getElementById('fatherName');
-    const fatherAlive = document.getElementById('fatherAlive');
-    const motherName = document.getElementById('motherName');
-    const motherAlive = document.getElementById('motherAlive');
-    const dob = document.getElementById('dob');
-    const idType = document.getElementById('idType');
-    const idNumber = document.getElementById('idNumber');
-    const passportFile = document.getElementById('passportFile');
-    const passportPreview = document.getElementById('passportPreview');
-    const selfieFile = document.getElementById('selfieFile');
-    const selfiePreview = document.getElementById('selfiePreview');
-    const consent = document.getElementById('consent');
-    const saveBtn = document.getElementById('saveBtn');
-    const saveMsg = document.getElementById('saveMsg');
-    const signOutBtn = document.getElementById('signOutBtn');
-    const reviewBox = document.getElementById('reviewBox');
-
-    const memberList = document.getElementById('memberList');
-    const btnRefreshMembers = document.getElementById('btnRefreshMembers');
-    const searchMember = document.getElementById('searchMember');
-
-    // child handling
-    function addChildRow(name = '', d = '') {
-      const idx = Date.now().toString(36);
-      const row = document.createElement('div');
-      row.className = 'form-row';
-      row.style.marginTop = '6px';
-      row.innerHTML = `
-        <div style="flex:1"><input class="childName" placeholder="Child name" value="${name}" /></div>
-        <div style="width:180px"><input class="childDob" type="date" value="${d}" /></div>
-        <div style="width:120px"><button type="button" class="btn btn-ghost removeChild">Remove</button></div>
-      `;
-      childrenList.appendChild(row);
-      row.querySelector('.removeChild').addEventListener('click', () => row.remove());
-    }
-    addChild.addEventListener('click', () => addChildRow());
-
-    // preview images
-    function previewFile(inputEl, previewEl) {
-      const f = inputEl.files && inputEl.files[0];
-      if (!f) { previewEl.classList.add('hidden'); previewEl.src=''; return; }
-      const reader = new FileReader();
-      reader.onload = e => {
-        previewEl.src = e.target.result;
-        previewEl.classList.remove('hidden');
-      };
-      reader.readAsDataURL(f);
-    }
-    passportFile.addEventListener('change', () => previewFile(passportFile, passportPreview));
-    selfieFile.addEventListener('change', () => previewFile(selfieFile, selfiePreview));
-
-    // tabs click
-    tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.remove('active'));
-      t.classList.add('active');
-      const target = t.dataset.tab;
-      tabContents.forEach(tc => tc.classList.add('hidden'));
-      document.getElementById(target).classList.remove('hidden');
-
-      // If review tab, populate review
-      if (target === 'review') {
-        buildReview();
-      }
-    }));
-
-    // auth buttons
-    btnSignIn.addEventListener('click', () => { signinBox.classList.remove('hidden'); signupBox.classList.add('hidden'); });
-    btnSignUp.addEventListener('click', () => { signupBox.classList.remove('hidden'); signinBox.classList.add('hidden'); });
-    cancelSignin.addEventListener('click', () => { signinBox.classList.add('hidden'); signinMsg.textContent=''; });
-    cancelSignup.addEventListener('click', () => { signupBox.classList.add('hidden'); signupMsg.textContent=''; });
-
-    // signup
-    signupBtn.addEventListener('click', async () => {
-      const email = signupEmail.value.trim(); const pw = signupPass.value;
-      if (!email || pw.length < 6) { signupMsg.textContent = 'Enter valid email and password (>=6)'; return; }
-      signupMsg.textContent = 'Creating account...';
-      try {
-        const r = await auth.createUserWithEmailAndPassword(email, pw);
-        signupMsg.textContent = 'Account created. Please fill registration form.';
-      } catch (err) { signupMsg.textContent = 'Error: ' + err.message; }
-    });
-
-    // signin
-    signinBtn.addEventListener('click', async () => {
-      const email = signinEmail.value.trim(); const pw = signinPass.value;
-      if (!email || !pw) { signinMsg.textContent='Enter credentials'; return; }
-      signinMsg.textContent = 'Signing in...';
-      try {
-        await auth.signInWithEmailAndPassword(email, pw);
-        signinMsg.textContent = 'Signed in';
-        signinBox.classList.add('hidden');
-      } catch (err) { signinMsg.textContent = 'Error: ' + err.message; }
-    });
-
-    // signout
-    signOutBtn.addEventListener('click', async () => {
-      await auth.signOut();
-      location.reload();
-    });
-
-    // auth state
-    let currentUid = null;
-    auth.onAuthStateChanged(async user => {
-      if (user) {
-        currentUid = user.uid;
-        authShort.textContent = user.email;
-        emailDisplay.value = user.email;
-
-        // if admin redirect (check /admins)
-        const adminSnap = await db.ref('admins/' + user.uid).once('value');
-        if (adminSnap.exists()) {
-          // keep admin on this page (admin can manage members here), but you can also redirect:
-          // location.href = 'admin-dashboard.html';
-        }
-
-        // load existing member profile if exists
-        const memSnap = await db.ref('members/' + user.uid).once('value');
-        if (memSnap.exists()) {
-          populateForm(memSnap.val());
-        }
-      } else {
-        currentUid = null;
-        authShort.textContent = 'Not signed in';
-        emailDisplay.value = '';
-      }
-    });
-
-    function populateForm(data) {
-      if (!data) return;
-      fullName.value = data.fullName || '';
-      age.value = data.age || '';
-      role.value = data.role || '';
-      office.value = data.office || '';
-      phone.value = data.phone || '';
-      payMode.value = data.payMode || 'cash';
-      staffId.value = data.staffId || '';
-      marital.value = data.marital || 'single';
-      numChildren.value = data.numChildren || 0;
-      spouseName.value = data.spouseName || '';
-      spouseContact.value = data.spouseContact || '';
-      nokName.value = data.nokName || '';
-      nokContact.value = data.nokContact || '';
-      fatherName.value = data.fatherName || '';
-      fatherAlive.checked = !!data.fatherAlive;
-      motherName.value = data.motherName || '';
-      motherAlive.checked = !!data.motherAlive;
-      dob.value = data.dob || '';
-      idType.value = data.idType || 'passport';
-      idNumber.value = data.idNumber || '';
-      childrenList.innerHTML = '';
-      (data.children || []).forEach(c => addChildRow(c.name, c.dob));
-      if (data.photoPassportURL) { passportPreview.src = data.photoPassportURL; passportPreview.classList.remove('hidden'); }
-      if (data.photoSelfieURL) { selfiePreview.src = data.photoSelfieURL; selfiePreview.classList.remove('hidden'); }
-    }
-
-    // build review summary
-    function buildReview() {
-      const children = Array.from(childrenList.querySelectorAll('.form-row')).map(r => {
-        return { name: r.querySelector('.childName').value, dob: r.querySelector('.childDob').value };
-      });
-      reviewBox.innerHTML = `
-        <strong>Name:</strong> ${fullName.value || '-'}<br>
-        <strong>Age:</strong> ${age.value || '-'}<br>
-        <strong>Role:</strong> ${role.value || '-'}<br>
-        <strong>Office:</strong> ${office.value || '-'}<br>
-        <strong>Phone:</strong> ${phone.value || '-'}<br>
-        <strong>Payment Mode:</strong> ${payMode.value}<br>
-        <strong>Staff ID:</strong> ${staffId.value || '-'}<br>
-        <strong>Marital status:</strong> ${marital.value}<br>
-        <strong>Children:</strong> ${children.map(c=>c.name? `${c.name} (${c.dob||'N/A'})` : '').filter(Boolean).join(', ')|| 'None'}<br>
-        <strong>Spouse:</strong> ${spouseName.value || '-'} (${spouseContact.value || '-'})<br>
-        <strong>NOK:</strong> ${nokName.value || '-'} (${nokContact.value || '-'})<br>
-        <strong>ID:</strong> ${idType.value} — ${idNumber.value || '-'}<br>
-        <strong>DOB:</strong> ${dob.value || '-'}
-      `;
-    }
-
-    // save registration
-    saveBtn.addEventListener('click', async () => {
-      if (!currentUid) { saveMsg.textContent = 'You must be signed in to save registration.'; return; }
-      if (!consent.checked) { saveMsg.textContent = 'You must give consent to save.'; return; }
-      saveMsg.textContent = 'Saving...';
-
-      const children = Array.from(childrenList.querySelectorAll('.form-row')).map(r => ({ name: r.querySelector('.childName').value, dob: r.querySelector('.childDob').value })).filter(c=>c.name);
-
-      const memberObj = {
-        uid: currentUid,
-        fullName: fullName.value,
-        age: age.value,
-        role: role.value,
-        office: office.value,
-        phone: phone.value,
-        email: auth.currentUser ? auth.currentUser.email : '',
-        payMode: payMode.value,
-        staffId: staffId.value,
-        marital: marital.value,
-        numChildren: numChildren.value,
-        spouseName: spouseName.value,
-        spouseContact: spouseContact.value,
-        nokName: nokName.value,
-        nokContact: nokContact.value,
-        fatherName: fatherName.value,
-        fatherAlive: fatherAlive.checked,
-        motherName: motherName.value,
-        motherAlive: motherAlive.checked,
-        dob: dob.value,
-        idType: idType.value,
-        idNumber: idNumber.value,
-        children,
-        updatedAt: Date.now()
-      };
-
-      try {
-        // upload passport if present
-        if (passportFile.files && passportFile.files[0]) {
-          const f = passportFile.files[0];
-          const path = 'member_photos/' + currentUid + '/passport_' + Date.now() + '_' + f.name;
-          const uploadTask = await storage.ref().child(path).put(f);
-          const url = await uploadTask.ref.getDownloadURL();
-          memberObj.photoPassportURL = url;
-          memberObj.photoPassportPath = path;
-        }
-        if (selfieFile.files && selfieFile.files[0]) {
-          const f2 = selfieFile.files[0];
-          const path2 = 'member_photos/' + currentUid + '/selfie_' + Date.now() + '_' + f2.name;
-          const uploadTask2 = await storage.ref().child(path2).put(f2);
-          const url2 = await uploadTask2.ref.getDownloadURL();
-          memberObj.photoSelfieURL = url2;
-          memberObj.photoSelfiePath = path2;
-        }
-
-        // write to /members/{uid}
-        await db.ref('members/' + currentUid).set(memberObj);
-
-        // write index for admin quick listing
-        await db.ref('membersIndex/' + currentUid).set({
-          uid: currentUid,
-          fullName: memberObj.fullName,
-          phone: memberObj.phone,
-          staffId: memberObj.staffId,
-          office: memberObj.office,
-          createdAt: Date.now()
-        });
-
-        saveMsg.textContent = 'Saved successfully.';
-      } catch (err) {
-        saveMsg.textContent = 'Failed: ' + err.message;
-      }
-    });
-
-    // refresh members list (admin view)
-    async function loadMembersList(q = '') {
-      memberList.innerHTML = 'Loading...';
-      try {
-        const snap = await db.ref('membersIndex').once('value');
-        const data = snap.val() || {};
-        const rows = Object.keys(data).map(k => {
-          const m = data[k];
-          const visible = !q || (m.fullName && m.fullName.toLowerCase().includes(q)) || (m.staffId && m.staffId.toLowerCase().includes(q)) || (m.phone && m.phone.includes(q));
-          if (!visible) return '';
-          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px;border-bottom:1px solid #f1f1f1">
-            <div><strong>${m.fullName}</strong><div class="muted">${m.staffId || ''} • ${m.office || ''}</div></div>
-            <div style="display:flex;gap:8px">
-              <button class="btn btn-ghost viewMember" data-uid="${m.uid}">View</button>
-              <button class="btn btn-ghost editMember" data-uid="${m.uid}">Edit</button>
-            </div>
-          </div>`;
-        }).join('');
-        memberList.innerHTML = rows || '<div class="muted">No members found.</div>';
-
-        // add handlers
-        memberList.querySelectorAll('.viewMember').forEach(b => b.addEventListener('click', async (ev) => {
-          const uid = ev.currentTarget.dataset.uid;
-          const s = await db.ref('members/' + uid).once('value');
-          const d = s.val() || {};
-          alert(`Member: ${d.fullName}\nPhone: ${d.phone}\nOffice: ${d.office}`);
-        }));
-        memberList.querySelectorAll('.editMember').forEach(b => b.addEventListener('click', async (ev) => {
-          const uid = ev.currentTarget.dataset.uid;
-          const s = await db.ref('members/' + uid).once('value');
-          const d = s.val() || {};
-          // populate form with that member (admin editing other member)
-          populateForm(d);
-          // sign in as admin remains - admin can then save to overwrite member entry via db.ref('members/uid').set(...)
-        }));
-
-      } catch (err) {
-        memberList.innerHTML = 'Failed to load: ' + err.message;
-      }
-    }
-
-    btnRefreshMembers.addEventListener('click', () => loadMembersList(searchMember.value.toLowerCase().trim()));
-    searchMember.addEventListener('input', () => loadMembersList(searchMember.value.toLowerCase().trim()));
-
-    // initial load
-    loadMembersList('');
-
-    // small UX: switch to review tab on load so user can see save button
-    // (keeps experience similar to old site)
-    document.querySelector('.tab[data-tab="personal"]').click();
-
-  </script>
+    <script src="js/firebase-config.js"></script>
+    <script src="js/members.js"></script>
 </body>
 </html>
